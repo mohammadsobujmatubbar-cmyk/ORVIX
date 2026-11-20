@@ -79,6 +79,7 @@ fun DeviceDialog(
     var type by remember { mutableStateOf(initial?.type ?: "ESP32") }
     var host by remember { mutableStateOf(initial?.host ?: "") }
     var portText by remember { mutableStateOf((initial?.port ?: 4210).toString()) }
+    var checkMsg by remember { mutableStateOf(initial?.checkMessage ?: "") }
     var roomId by remember { mutableStateOf(initial?.roomId ?: rooms.firstOrNull()?.id ?: -1L) }
     val port = portText.toIntOrNull()
     val portOk = port != null && port in 1..65535
@@ -139,6 +140,7 @@ fun DeviceDialog(
                             type = type,
                             host = host.trim(),
                             port = port ?: 4210,
+                            checkMessage = checkMsg,
                             gatewayId = initial?.gatewayId
                         )
                     )

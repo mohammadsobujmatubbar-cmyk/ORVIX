@@ -6,3 +6,4 @@ local.properties
 .idea/
 *.jks
 *.keystore
+firmware/esp8266_relay/wifi_config.h
