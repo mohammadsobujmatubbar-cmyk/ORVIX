@@ -3,7 +3,7 @@ package com.orvix.smarthome
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyRow
-import androidx.compose.foundation.lazy.itemsIndexed
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
@@ -14,28 +14,21 @@ import androidx.compose.material.icons.filled.Notifications
 import androidx.compose.material.icons.filled.Place
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.Text
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateMapOf
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 
-data class DemoDevice(val id: Int, val roomIndex: Int, val name: String)
-
 @Composable
 fun HomeScreen(
-    s: Strings, rooms: List<String>, devices: List<DemoDevice>,
-    states: MutableMap<Int, Boolean>, modifier: Modifier = Modifier
+    s: Strings, rooms: List<RoomEntity>, devices: List<DeviceEntity>, modifier: Modifier = Modifier
 ) {
     val g = LocalGlass.current
-    var selected by remember { mutableStateOf(-1) }
-    val shown = if (selected < 0) devices else devices.filter { it.roomIndex == selected }
+    var selectedId by remember { mutableStateOf(-1L) }
+    val sel = if (rooms.any { it.id == selectedId }) selectedId else -1L
+    val shown = if (sel < 0) devices else devices.filter { it.roomId == sel }
     Column(modifier.verticalScroll(rememberScrollState()).padding(horizontal = 20.dp)) {
         Spacer(Modifier.height(16.dp))
         Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp, Alignment.End)) {
@@ -46,13 +39,13 @@ fun HomeScreen(
         Text(s.welcome, color = g.text, fontSize = 34.sp, fontWeight = FontWeight.Bold, lineHeight = 40.sp)
         Spacer(Modifier.height(20.dp))
         LazyRow(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-            item { GlassChip(s.all, selected < 0) { selected = -1 } }
-            itemsIndexed(rooms) { i, r -> GlassChip(r, selected == i) { selected = i } }
+            item { GlassChip(s.all, sel < 0) { selectedId = -1L } }
+            items(rooms, key = { it.id }) { r -> GlassChip(r.name, sel == r.id) { selectedId = r.id } }
         }
         Spacer(Modifier.height(16.dp))
         Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
             StatCard(s.totalRooms, rooms.size.toString(), Modifier.weight(1f))
-            StatCard(s.controllers, "0", Modifier.weight(1f))
+            StatCard(s.controllers, devices.size.toString(), Modifier.weight(1f))
             StatCard(s.relays, "0", Modifier.weight(1f))
         }
         Spacer(Modifier.height(16.dp))
@@ -62,18 +55,24 @@ fun HomeScreen(
                 horizontalArrangement = Arrangement.spacedBy(12.dp)
             ) {
                 pair.forEach { d ->
-                    DeviceCard(
-                        room = rooms[d.roomIndex], name = d.name,
-                        isOn = states[d.id] == true, onLabel = s.on, offLabel = s.off,
-                        onToggle = { states[d.id] = states[d.id] != true },
-                        modifier = Modifier.weight(1f)
-                    )
+                    GlassCard(Modifier.weight(1f)) {
+                        Text(
+                            rooms.firstOrNull { it.id == d.roomId }?.name ?: "",
+                            color = g.subText, fontSize = 12.sp
+                        )
+                        Text(d.name, color = g.text, fontSize = 18.sp, fontWeight = FontWeight.Medium)
+                        Spacer(Modifier.height(8.dp))
+                        Text(d.type, color = g.subText, fontSize = 13.sp)
+                        Text(d.host + ":" + d.port, color = g.subText, fontSize = 13.sp)
+                    }
                 }
                 if (pair.size == 1) Spacer(Modifier.weight(1f))
             }
         }
-        Text(s.sampleNote, color = g.subText, fontSize = 12.sp)
-        Spacer(Modifier.height(12.dp))
+        if (shown.isEmpty()) {
+            Text(s.noControllers, color = g.subText, fontSize = 13.sp)
+            Spacer(Modifier.height(12.dp))
+        }
         GlassCard(Modifier.fillMaxWidth()) {
             Text(s.systemStatus, color = g.text, fontSize = 18.sp, fontWeight = FontWeight.Medium)
             Spacer(Modifier.height(6.dp))
@@ -85,34 +84,103 @@ fun HomeScreen(
 }
 
 @Composable
-fun RoomsScreen(s: Strings, rooms: List<String>, modifier: Modifier = Modifier) {
+fun RoomsScreen(
+    s: Strings, rooms: List<RoomEntity>, devices: List<DeviceEntity>,
+    onAdd: (String) -> Unit, onRename: (RoomEntity, String) -> Unit, onDelete: (RoomEntity) -> Unit,
+    modifier: Modifier = Modifier
+) {
     val g = LocalGlass.current
+    var showAdd by remember { mutableStateOf(false) }
+    var editing by remember { mutableStateOf<RoomEntity?>(null) }
+    var deleting by remember { mutableStateOf<RoomEntity?>(null) }
     Column(modifier.verticalScroll(rememberScrollState()).padding(horizontal = 20.dp)) {
         Spacer(Modifier.height(24.dp))
-        Text(s.rooms, color = g.text, fontSize = 30.sp, fontWeight = FontWeight.Bold)
+        Row(
+            Modifier.fillMaxWidth(),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.SpaceBetween
+        ) {
+            Text(s.rooms, color = g.text, fontSize = 30.sp, fontWeight = FontWeight.Bold)
+            GlassButton("+ " + s.addRoom) { showAdd = true }
+        }
         Spacer(Modifier.height(16.dp))
         rooms.forEach { r ->
             GlassCard(Modifier.fillMaxWidth().padding(bottom = 12.dp)) {
-                Text(r, color = g.text, fontSize = 18.sp, fontWeight = FontWeight.Medium)
-                Text("0 " + s.controllers, color = g.subText, fontSize = 13.sp)
+                Text(r.name, color = g.text, fontSize = 18.sp, fontWeight = FontWeight.Medium)
+                Text(
+                    devices.count { it.roomId == r.id }.toString() + " " + s.controllers,
+                    color = g.subText, fontSize = 13.sp
+                )
+                Spacer(Modifier.height(10.dp))
+                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    GlassChip(s.edit, false) { editing = r }
+                    GlassChip(s.delete, false) { deleting = r }
+                }
             }
         }
-        Text(s.roomsNote, color = g.subText, fontSize = 13.sp)
         Spacer(Modifier.height(120.dp))
+    }
+    if (showAdd) {
+        RoomDialog(s, s.addRoom, "", { showAdd = false }) { onAdd(it); showAdd = false }
+    }
+    editing?.let { r ->
+        RoomDialog(s, s.renameRoom, r.name, { editing = null }) { onRename(r, it); editing = null }
+    }
+    deleting?.let { r ->
+        ConfirmDialog(s.delete, s.deleteRoomMsg, s.delete, s.cancel, { onDelete(r); deleting = null }, { deleting = null })
     }
 }
 
 @Composable
-fun DevicesScreen(s: Strings, modifier: Modifier = Modifier) {
+fun DevicesScreen(
+    s: Strings, rooms: List<RoomEntity>, devices: List<DeviceEntity>,
+    onAdd: (DeviceEntity) -> Unit, onUpdate: (DeviceEntity) -> Unit, onDelete: (DeviceEntity) -> Unit,
+    modifier: Modifier = Modifier
+) {
     val g = LocalGlass.current
+    var showAdd by remember { mutableStateOf(false) }
+    var editing by remember { mutableStateOf<DeviceEntity?>(null) }
+    var deleting by remember { mutableStateOf<DeviceEntity?>(null) }
     Column(modifier.verticalScroll(rememberScrollState()).padding(horizontal = 20.dp)) {
         Spacer(Modifier.height(24.dp))
-        Text(s.devices, color = g.text, fontSize = 30.sp, fontWeight = FontWeight.Bold)
-        Spacer(Modifier.height(16.dp))
-        GlassCard(Modifier.fillMaxWidth()) {
-            Text(s.devicesEmpty, color = g.subText)
+        Row(
+            Modifier.fillMaxWidth(),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.SpaceBetween
+        ) {
+            Text(s.devices, color = g.text, fontSize = 30.sp, fontWeight = FontWeight.Bold)
+            GlassButton("+ " + s.addDevice) { showAdd = true }
         }
+        Spacer(Modifier.height(16.dp))
+        if (devices.isEmpty()) {
+            GlassCard(Modifier.fillMaxWidth()) { Text(s.noControllers, color = g.subText) }
+        }
+        devices.forEach { d ->
+            GlassCard(Modifier.fillMaxWidth().padding(bottom = 12.dp)) {
+                Text(
+                    rooms.firstOrNull { it.id == d.roomId }?.name ?: "",
+                    color = g.subText, fontSize = 12.sp
+                )
+                Text(d.name, color = g.text, fontSize = 18.sp, fontWeight = FontWeight.Medium)
+                Text(d.type + "  " + d.host + ":" + d.port, color = g.subText, fontSize = 13.sp)
+                Spacer(Modifier.height(10.dp))
+                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    GlassChip(s.edit, false) { editing = d }
+                    GlassChip(s.delete, false) { deleting = d }
+                }
+            }
+        }
+        Text(s.controlNote, color = g.subText, fontSize = 13.sp)
         Spacer(Modifier.height(120.dp))
+    }
+    if (showAdd) {
+        DeviceDialog(s, s.addDevice, rooms, null, { showAdd = false }) { onAdd(it); showAdd = false }
+    }
+    editing?.let { d ->
+        DeviceDialog(s, s.editDevice, rooms, d, { editing = null }) { onUpdate(it); editing = null }
+    }
+    deleting?.let { d ->
+        ConfirmDialog(s.delete, s.deleteDeviceMsg, s.delete, s.cancel, { onDelete(d); deleting = null }, { deleting = null })
     }
 }
 
@@ -151,18 +219,15 @@ fun SettingsScreen(
 }
 
 @Composable
-fun OrvixApp(lang: Lang, mode: ThemeMode, onTheme: (ThemeMode) -> Unit, onLang: (Lang) -> Unit) {
+fun OrvixApp(
+    lang: Lang, mode: ThemeMode, onTheme: (ThemeMode) -> Unit, onLang: (Lang) -> Unit,
+    vm: OrvixViewModel
+) {
     val s = strings(lang)
     val g = LocalGlass.current
+    val rooms by vm.rooms.collectAsState()
+    val devices by vm.devices.collectAsState()
     var tab by remember { mutableStateOf(0) }
-    val states = remember { mutableStateMapOf<Int, Boolean>() }
-    val rooms = listOf(s.bedroom, s.livingRoom, s.kitchen, s.diningRoom)
-    val devices = listOf(
-        DemoDevice(1, 1, s.sampleLight),
-        DemoDevice(2, 1, s.sampleFan),
-        DemoDevice(3, 2, s.sampleLight),
-        DemoDevice(4, 0, s.sampleFan)
-    )
     val items = listOf(
         NavItem(Icons.Default.Home, s.home),
         NavItem(Icons.Default.Place, s.rooms),
@@ -172,9 +237,9 @@ fun OrvixApp(lang: Lang, mode: ThemeMode, onTheme: (ThemeMode) -> Unit, onLang: 
     Box(Modifier.fillMaxSize().background(g.background).statusBarsPadding()) {
         val full = Modifier.fillMaxSize()
         when (tab) {
-            0 -> HomeScreen(s, rooms, devices, states, full)
-            1 -> RoomsScreen(s, rooms, full)
-            2 -> DevicesScreen(s, full)
+            0 -> HomeScreen(s, rooms, devices, full)
+            1 -> RoomsScreen(s, rooms, devices, vm::addRoom, vm::renameRoom, vm::deleteRoom, full)
+            2 -> DevicesScreen(s, rooms, devices, vm::addDevice, vm::updateDevice, vm::deleteDevice, full)
             else -> SettingsScreen(s, lang, mode, onLang, onTheme, full)
         }
         GlassBottomBar(
