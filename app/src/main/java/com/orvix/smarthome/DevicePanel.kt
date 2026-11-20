@@ -43,7 +43,7 @@ fun DevicePanelScreen(
         GlassChip("<  " + s.back, false) { onBack() }
         Spacer(Modifier.height(16.dp))
         Text(device.name, color = g.text, fontSize = 30.sp, fontWeight = FontWeight.Bold)
-        Text(if (online) "● Online" else "○ Offline", color = g.subText, fontSize = 14.sp)
+        Text(if (DeviceStatus.map.collectAsState().value[device.id] == true) "● Online" else "○ Offline", color = g.subText, fontSize = 14.sp)
         Text(
             roomName + "  |  " + device.type + "  |  " + device.host + ":" + device.port,
             color = g.subText, fontSize = 13.sp
