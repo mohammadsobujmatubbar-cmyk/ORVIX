@@ -89,7 +89,7 @@ fun HomeScreen(
                         Text(r.name, color = g.text, fontSize = 18.sp, fontWeight = FontWeight.Medium)
                         Text(d.name + "  " + statusText(online[d.id]), color = g.subText, fontSize = 11.sp)
                         val code = cmd[r.id]
-                        if (code != null) Text(relayCmdLabel(code), color = g.subText, fontSize = 11.sp)
+                                Text(if (code != null) relayCmdLabel(code) else " ", color = g.subText, fontSize = 11.sp, maxLines = 1)
                         Spacer(Modifier.height(10.dp))
                         Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) {
                             PowerPill(r.isOn, if (r.isOn) s.on else s.off) {

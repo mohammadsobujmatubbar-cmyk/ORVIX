@@ -120,6 +120,13 @@ fun DeviceDialog(
                     isError = !portOk,
                     supportingText = { if (!portOk) Text(s.invalidPort) }
                 )
+                OutlinedTextField(
+                    value = checkMsg,
+                    onValueChange = { checkMsg = it },
+                    label = { Text("Check message (optional)") },
+                    placeholder = { Text("STATUS") },
+                    singleLine = true
+                )
                 Text(s.roomLabel)
                 Row(
                     Modifier.horizontalScroll(rememberScrollState()),
