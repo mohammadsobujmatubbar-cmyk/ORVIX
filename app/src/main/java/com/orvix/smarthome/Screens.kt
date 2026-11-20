@@ -83,7 +83,6 @@ fun HomeScreen(
             Text(s.systemStatus, color = g.text, fontSize = 18.sp, fontWeight = FontWeight.Medium)
             Spacer(Modifier.height(6.dp))
             Text(s.appReady, color = g.subText)
-            Text(s.notConfigured, color = g.subText)
         }
         Spacer(Modifier.height(120.dp))
     }
