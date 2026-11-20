@@ -1,5 +1,9 @@
 package com.orvix.smarthome
 
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.rememberCoroutineScope
+import kotlinx.coroutines.launch
+
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
@@ -258,6 +262,7 @@ fun OrvixApp(
                 onBack = { openId = null },
                 onAddRelays = vm::addRelays,
                 onUpdateRelay = vm::updateRelay,
+                onToggle = { r, on -> vm.devices.value.firstOrNull { it.id == r.deviceId }?.let { d -> vm.sendRelayCmd(d, r, on) } },
                 onDeleteRelay = vm::deleteRelay,
                 onSetAll = { on -> vm.setAllRelays(openDevice.id, on) },
                 onAddSensor = vm::addSensor,

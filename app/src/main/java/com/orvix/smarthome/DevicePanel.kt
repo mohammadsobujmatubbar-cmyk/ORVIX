@@ -1,5 +1,7 @@
 package com.orvix.smarthome
 
+import androidx.compose.runtime.collectAsState
+
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
@@ -20,6 +22,7 @@ fun DevicePanelScreen(
     onUpdateRelay: (RelayEntity) -> Unit,
     onDeleteRelay: (RelayEntity) -> Unit,
     onSetAll: (Boolean) -> Unit,
+    onToggle: (RelayEntity, Boolean) -> Unit,
     onAddSensor: (SensorEntity) -> Unit,
     onUpdateSensor: (SensorEntity) -> Unit,
     onDeleteSensor: (SensorEntity) -> Unit,
@@ -55,8 +58,8 @@ fun DevicePanelScreen(
         Spacer(Modifier.height(10.dp))
         if (relays.isNotEmpty()) {
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                GlassChip(s.allOn, false) { onSetAll(true) }
-                GlassChip(s.allOff, false) { onSetAll(false) }
+                GlassChip(s.allOn, false) { relays.forEach { onToggle(it, true) } }
+                GlassChip(s.allOff, false) { relays.forEach { onToggle(it, false) } }
             }
             Spacer(Modifier.height(10.dp))
         }
@@ -75,7 +78,7 @@ fun DevicePanelScreen(
                         Text("ON: " + r.onMessage.ifBlank { s.notSet }, color = g.subText, fontSize = 12.sp)
                         Text("OFF: " + r.offMessage.ifBlank { s.notSet }, color = g.subText, fontSize = 12.sp)
                     }
-                    PowerPill(r.isOn, if (r.isOn) s.on else s.off) { onUpdateRelay(r.copy(isOn = !r.isOn)) }
+                    PowerPill(r.isOn, if (r.isOn) s.on else s.off) { onToggle(r, !r.isOn) }
                 }
                 Spacer(Modifier.height(10.dp))
                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
