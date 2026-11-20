@@ -31,6 +31,7 @@ fun DevicePanelScreen(
     modifier: Modifier = Modifier
 ) {
     val g = LocalGlass.current
+    androidx.compose.runtime.LaunchedEffect(device) { while (true) { checkDevice(device); kotlinx.coroutines.delay(5000) } }
     var showAddRelay by remember { mutableStateOf(false) }
     var editingRelay by remember { mutableStateOf<RelayEntity?>(null) }
     var deletingRelay by remember { mutableStateOf<RelayEntity?>(null) }
@@ -80,6 +81,7 @@ fun DevicePanelScreen(
                         Text(r.name, color = g.text, fontSize = 18.sp, fontWeight = FontWeight.Medium)
                         Text("ON: " + r.onMessage.ifBlank { s.notSet }, color = g.subText, fontSize = 12.sp)
                         Text("OFF: " + r.offMessage.ifBlank { s.notSet }, color = g.subText, fontSize = 12.sp)
+                            val stc = CmdStatus.map.collectAsState().value[r.id]; if (stc != null) Text(relayCmdLabel(stc), color = g.subText, fontSize = 12.sp)
                     }
                     PowerPill(r.isOn, if (r.isOn) s.on else s.off) { onToggle(r, !r.isOn) }
                 }

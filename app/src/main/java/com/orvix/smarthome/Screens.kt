@@ -27,7 +27,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 
 @Composable
-fun HomeScreen(
+fun HomeScreenOld(
     s: Strings, rooms: List<RoomEntity>, devices: List<DeviceEntity>, relayCount: Int,
     modifier: Modifier = Modifier
 ) {
@@ -144,6 +144,7 @@ fun DevicesScreen(
     modifier: Modifier = Modifier
 ) {
     val g = LocalGlass.current
+    androidx.compose.runtime.LaunchedEffect(devices) { while (true) { pingAll(devices); kotlinx.coroutines.delay(5000) } }
     var showAdd by remember { mutableStateOf(false) }
     var editing by remember { mutableStateOf<DeviceEntity?>(null) }
     var deleting by remember { mutableStateOf<DeviceEntity?>(null) }
