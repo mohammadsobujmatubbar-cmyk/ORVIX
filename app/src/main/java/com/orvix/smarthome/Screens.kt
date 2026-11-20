@@ -174,7 +174,7 @@ fun DevicesScreen(
                     color = g.subText, fontSize = 13.sp
                 )
                 Spacer(Modifier.height(10.dp))
-                    Text(if (DeviceStatus.map.collectAsState().value[d.id] == true) "● Online" else "○ Offline", color = g.subText, fontSize = 14.sp)
+                    Text(statusText(DeviceStatus.map.collectAsState().value[d.id]), color = g.subText, fontSize = 14.sp)
                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                     GlassChip(s.open, true) { onOpen(d) }
                     GlassChip(s.edit, false) { editing = d }
