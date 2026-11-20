@@ -17,27 +17,26 @@ class OrvixViewModel(app: Application) : AndroidViewModel(app) {
     val devices: StateFlow<List<DeviceEntity>> =
         repo.devices.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
-    fun addRoom(name: String) {
-        viewModelScope.launch { repo.addRoom(name) }
-    }
+    val relays: StateFlow<List<RelayEntity>> =
+        repo.relays.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
-    fun renameRoom(room: RoomEntity, name: String) {
-        viewModelScope.launch { repo.renameRoom(room, name) }
-    }
+    val sensors: StateFlow<List<SensorEntity>> =
+        repo.sensors.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
-    fun deleteRoom(room: RoomEntity) {
-        viewModelScope.launch { repo.deleteRoom(room) }
-    }
+    fun addRoom(name: String) { viewModelScope.launch { repo.addRoom(name) } }
+    fun renameRoom(room: RoomEntity, name: String) { viewModelScope.launch { repo.renameRoom(room, name) } }
+    fun deleteRoom(room: RoomEntity) { viewModelScope.launch { repo.deleteRoom(room) } }
 
-    fun addDevice(device: DeviceEntity) {
-        viewModelScope.launch { repo.addDevice(device) }
-    }
+    fun addDevice(device: DeviceEntity) { viewModelScope.launch { repo.addDevice(device) } }
+    fun updateDevice(device: DeviceEntity) { viewModelScope.launch { repo.updateDevice(device) } }
+    fun deleteDevice(device: DeviceEntity) { viewModelScope.launch { repo.deleteDevice(device) } }
 
-    fun updateDevice(device: DeviceEntity) {
-        viewModelScope.launch { repo.updateDevice(device) }
-    }
+    fun addRelays(list: List<RelayEntity>) { viewModelScope.launch { repo.addRelays(list) } }
+    fun updateRelay(relay: RelayEntity) { viewModelScope.launch { repo.updateRelay(relay) } }
+    fun deleteRelay(relay: RelayEntity) { viewModelScope.launch { repo.deleteRelay(relay) } }
+    fun setAllRelays(deviceId: Long, on: Boolean) { viewModelScope.launch { repo.setAllRelays(deviceId, on) } }
 
-    fun deleteDevice(device: DeviceEntity) {
-        viewModelScope.launch { repo.deleteDevice(device) }
-    }
+    fun addSensor(sensor: SensorEntity) { viewModelScope.launch { repo.addSensor(sensor) } }
+    fun updateSensor(sensor: SensorEntity) { viewModelScope.launch { repo.updateSensor(sensor) } }
+    fun deleteSensor(sensor: SensorEntity) { viewModelScope.launch { repo.deleteSensor(sensor) } }
 }

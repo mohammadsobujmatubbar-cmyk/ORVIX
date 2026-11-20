@@ -2,6 +2,7 @@ package com.orvix.smarthome
 
 import android.content.Context
 import androidx.room.*
+import androidx.room.migration.Migration
 import androidx.sqlite.db.SupportSQLiteDatabase
 import kotlinx.coroutines.flow.Flow
 
@@ -33,6 +34,47 @@ data class DeviceEntity(
     val gatewayId: Long? = null
 )
 
+@Entity(
+    tableName = "relays",
+    foreignKeys = [
+        ForeignKey(
+            entity = DeviceEntity::class,
+            parentColumns = ["id"],
+            childColumns = ["deviceId"],
+            onDelete = ForeignKey.CASCADE
+        )
+    ],
+    indices = [Index("deviceId")]
+)
+data class RelayEntity(
+    @PrimaryKey(autoGenerate = true) val id: Long = 0,
+    val deviceId: Long,
+    val name: String,
+    val onMessage: String,
+    val offMessage: String,
+    val isOn: Boolean = false
+)
+
+@Entity(
+    tableName = "sensors",
+    foreignKeys = [
+        ForeignKey(
+            entity = DeviceEntity::class,
+            parentColumns = ["id"],
+            childColumns = ["deviceId"],
+            onDelete = ForeignKey.CASCADE
+        )
+    ],
+    indices = [Index("deviceId")]
+)
+data class SensorEntity(
+    @PrimaryKey(autoGenerate = true) val id: Long = 0,
+    val deviceId: Long,
+    val name: String,
+    val type: String,
+    val config: String
+)
+
 @Dao
 interface OrvixDao {
     @Query("SELECT * FROM rooms ORDER BY id")
@@ -40,6 +82,12 @@ interface OrvixDao {
 
     @Query("SELECT * FROM devices ORDER BY id")
     fun observeDevices(): Flow<List<DeviceEntity>>
+
+    @Query("SELECT * FROM relays ORDER BY id")
+    fun observeRelays(): Flow<List<RelayEntity>>
+
+    @Query("SELECT * FROM sensors ORDER BY id")
+    fun observeSensors(): Flow<List<SensorEntity>>
 
     @Insert
     suspend fun insertRoom(room: RoomEntity): Long
@@ -58,9 +106,43 @@ interface OrvixDao {
 
     @Delete
     suspend fun deleteDevice(device: DeviceEntity)
+
+    @Insert
+    suspend fun insertRelays(relays: List<RelayEntity>)
+
+    @Update
+    suspend fun updateRelay(relay: RelayEntity)
+
+    @Delete
+    suspend fun deleteRelay(relay: RelayEntity)
+
+    @Query("UPDATE relays SET isOn = :on WHERE deviceId = :deviceId")
+    suspend fun setAllRelays(deviceId: Long, on: Boolean)
+
+    @Insert
+    suspend fun insertSensor(sensor: SensorEntity)
+
+    @Update
+    suspend fun updateSensor(sensor: SensorEntity)
+
+    @Delete
+    suspend fun deleteSensor(sensor: SensorEntity)
 }
 
-@Database(entities = [RoomEntity::class, DeviceEntity::class], version = 1, exportSchema = false)
+private val MIGRATION_1_2 = object : Migration(1, 2) {
+    override fun migrate(db: SupportSQLiteDatabase) {
+        db.execSQL("CREATE TABLE IF NOT EXISTS `relays` (`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `deviceId` INTEGER NOT NULL, `name` TEXT NOT NULL, `onMessage` TEXT NOT NULL, `offMessage` TEXT NOT NULL, `isOn` INTEGER NOT NULL, FOREIGN KEY(`deviceId`) REFERENCES `devices`(`id`) ON UPDATE NO ACTION ON DELETE CASCADE )")
+        db.execSQL("CREATE INDEX IF NOT EXISTS `index_relays_deviceId` ON `relays` (`deviceId`)")
+        db.execSQL("CREATE TABLE IF NOT EXISTS `sensors` (`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `deviceId` INTEGER NOT NULL, `name` TEXT NOT NULL, `type` TEXT NOT NULL, `config` TEXT NOT NULL, FOREIGN KEY(`deviceId`) REFERENCES `devices`(`id`) ON UPDATE NO ACTION ON DELETE CASCADE )")
+        db.execSQL("CREATE INDEX IF NOT EXISTS `index_sensors_deviceId` ON `sensors` (`deviceId`)")
+    }
+}
+
+@Database(
+    entities = [RoomEntity::class, DeviceEntity::class, RelayEntity::class, SensorEntity::class],
+    version = 2,
+    exportSchema = false
+)
 abstract class OrvixDatabase : RoomDatabase() {
     abstract fun dao(): OrvixDao
 
@@ -75,6 +157,7 @@ abstract class OrvixDatabase : RoomDatabase() {
 
         private fun build(context: Context): OrvixDatabase =
             Room.databaseBuilder(context.applicationContext, OrvixDatabase::class.java, "orvix.db")
+                .addMigrations(MIGRATION_1_2)
                 .addCallback(object : RoomDatabase.Callback() {
                     override fun onCreate(db: SupportSQLiteDatabase) {
                         super.onCreate(db)
@@ -90,6 +173,8 @@ abstract class OrvixDatabase : RoomDatabase() {
 class OrvixRepository(private val dao: OrvixDao) {
     val rooms: Flow<List<RoomEntity>> = dao.observeRooms()
     val devices: Flow<List<DeviceEntity>> = dao.observeDevices()
+    val relays: Flow<List<RelayEntity>> = dao.observeRelays()
+    val sensors: Flow<List<SensorEntity>> = dao.observeSensors()
 
     suspend fun addRoom(name: String) { dao.insertRoom(RoomEntity(name = name)) }
     suspend fun renameRoom(room: RoomEntity, name: String) { dao.updateRoom(room.copy(name = name)) }
@@ -97,4 +182,11 @@ class OrvixRepository(private val dao: OrvixDao) {
     suspend fun addDevice(device: DeviceEntity) { dao.insertDevice(device) }
     suspend fun updateDevice(device: DeviceEntity) { dao.updateDevice(device) }
     suspend fun deleteDevice(device: DeviceEntity) { dao.deleteDevice(device) }
+    suspend fun addRelays(list: List<RelayEntity>) { dao.insertRelays(list) }
+    suspend fun updateRelay(relay: RelayEntity) { dao.updateRelay(relay) }
+    suspend fun deleteRelay(relay: RelayEntity) { dao.deleteRelay(relay) }
+    suspend fun setAllRelays(deviceId: Long, on: Boolean) { dao.setAllRelays(deviceId, on) }
+    suspend fun addSensor(sensor: SensorEntity) { dao.insertSensor(sensor) }
+    suspend fun updateSensor(sensor: SensorEntity) { dao.updateSensor(sensor) }
+    suspend fun deleteSensor(sensor: SensorEntity) { dao.deleteSensor(sensor) }
 }

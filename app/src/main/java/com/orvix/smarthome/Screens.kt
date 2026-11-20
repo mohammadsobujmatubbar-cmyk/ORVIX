@@ -1,5 +1,6 @@
 package com.orvix.smarthome
 
+import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyRow
@@ -23,7 +24,8 @@ import androidx.compose.ui.unit.sp
 
 @Composable
 fun HomeScreen(
-    s: Strings, rooms: List<RoomEntity>, devices: List<DeviceEntity>, modifier: Modifier = Modifier
+    s: Strings, rooms: List<RoomEntity>, devices: List<DeviceEntity>, relayCount: Int,
+    modifier: Modifier = Modifier
 ) {
     val g = LocalGlass.current
     var selectedId by remember { mutableStateOf(-1L) }
@@ -46,7 +48,7 @@ fun HomeScreen(
         Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
             StatCard(s.totalRooms, rooms.size.toString(), Modifier.weight(1f))
             StatCard(s.controllers, devices.size.toString(), Modifier.weight(1f))
-            StatCard(s.relays, "0", Modifier.weight(1f))
+            StatCard(s.relays, relayCount.toString(), Modifier.weight(1f))
         }
         Spacer(Modifier.height(16.dp))
         shown.chunked(2).forEach { pair ->
@@ -133,7 +135,8 @@ fun RoomsScreen(
 
 @Composable
 fun DevicesScreen(
-    s: Strings, rooms: List<RoomEntity>, devices: List<DeviceEntity>,
+    s: Strings, rooms: List<RoomEntity>, devices: List<DeviceEntity>, relays: List<RelayEntity>,
+    onOpen: (DeviceEntity) -> Unit,
     onAdd: (DeviceEntity) -> Unit, onUpdate: (DeviceEntity) -> Unit, onDelete: (DeviceEntity) -> Unit,
     modifier: Modifier = Modifier
 ) {
@@ -163,14 +166,18 @@ fun DevicesScreen(
                 )
                 Text(d.name, color = g.text, fontSize = 18.sp, fontWeight = FontWeight.Medium)
                 Text(d.type + "  " + d.host + ":" + d.port, color = g.subText, fontSize = 13.sp)
+                Text(
+                    relays.count { it.deviceId == d.id }.toString() + " " + s.relays,
+                    color = g.subText, fontSize = 13.sp
+                )
                 Spacer(Modifier.height(10.dp))
                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    GlassChip(s.open, true) { onOpen(d) }
                     GlassChip(s.edit, false) { editing = d }
                     GlassChip(s.delete, false) { deleting = d }
                 }
             }
         }
-        Text(s.controlNote, color = g.subText, fontSize = 13.sp)
         Spacer(Modifier.height(120.dp))
     }
     if (showAdd) {
@@ -227,7 +234,12 @@ fun OrvixApp(
     val g = LocalGlass.current
     val rooms by vm.rooms.collectAsState()
     val devices by vm.devices.collectAsState()
+    val relays by vm.relays.collectAsState()
+    val sensors by vm.sensors.collectAsState()
     var tab by remember { mutableStateOf(0) }
+    var openId by remember { mutableStateOf<Long?>(null) }
+    val openDevice = devices.firstOrNull { it.id == openId }
+    BackHandler(enabled = openDevice != null) { openId = null }
     val items = listOf(
         NavItem(Icons.Default.Home, s.home),
         NavItem(Icons.Default.Place, s.rooms),
@@ -236,15 +248,37 @@ fun OrvixApp(
     )
     Box(Modifier.fillMaxSize().background(g.background).statusBarsPadding()) {
         val full = Modifier.fillMaxSize()
-        when (tab) {
-            0 -> HomeScreen(s, rooms, devices, full)
-            1 -> RoomsScreen(s, rooms, devices, vm::addRoom, vm::renameRoom, vm::deleteRoom, full)
-            2 -> DevicesScreen(s, rooms, devices, vm::addDevice, vm::updateDevice, vm::deleteDevice, full)
-            else -> SettingsScreen(s, lang, mode, onLang, onTheme, full)
+        if (openDevice != null) {
+            DevicePanelScreen(
+                s = s,
+                device = openDevice,
+                roomName = rooms.firstOrNull { it.id == openDevice.roomId }?.name ?: "",
+                relays = relays.filter { it.deviceId == openDevice.id },
+                sensors = sensors.filter { it.deviceId == openDevice.id },
+                onBack = { openId = null },
+                onAddRelays = vm::addRelays,
+                onUpdateRelay = vm::updateRelay,
+                onDeleteRelay = vm::deleteRelay,
+                onSetAll = { on -> vm.setAllRelays(openDevice.id, on) },
+                onAddSensor = vm::addSensor,
+                onUpdateSensor = vm::updateSensor,
+                onDeleteSensor = vm::deleteSensor,
+                modifier = full.navigationBarsPadding()
+            )
+        } else {
+            when (tab) {
+                0 -> HomeScreen(s, rooms, devices, relays.size, full)
+                1 -> RoomsScreen(s, rooms, devices, vm::addRoom, vm::renameRoom, vm::deleteRoom, full)
+                2 -> DevicesScreen(
+                    s, rooms, devices, relays, { d -> openId = d.id },
+                    vm::addDevice, vm::updateDevice, vm::deleteDevice, full
+                )
+                else -> SettingsScreen(s, lang, mode, onLang, onTheme, full)
+            }
+            GlassBottomBar(
+                items, tab, { tab = it },
+                Modifier.align(Alignment.BottomCenter).navigationBarsPadding().padding(bottom = 16.dp)
+            )
         }
-        GlassBottomBar(
-            items, tab, { tab = it },
-            Modifier.align(Alignment.BottomCenter).navigationBarsPadding().padding(bottom = 16.dp)
-        )
     }
 }
