@@ -31,7 +31,8 @@ data class DeviceEntity(
     val type: String,
     val host: String,
     val port: Int,
-    val gatewayId: Long? = null
+    val gatewayId: Long? = null,
+    val checkMessage: String = ""
 )
 
 @Entity(
@@ -140,7 +141,7 @@ private val MIGRATION_1_2 = object : Migration(1, 2) {
 
 @Database(
     entities = [RoomEntity::class, DeviceEntity::class, RelayEntity::class, SensorEntity::class],
-    version = 2,
+    version = 3,
     exportSchema = false
 )
 abstract class OrvixDatabase : RoomDatabase() {
@@ -157,7 +158,7 @@ abstract class OrvixDatabase : RoomDatabase() {
 
         private fun build(context: Context): OrvixDatabase =
             Room.databaseBuilder(context.applicationContext, OrvixDatabase::class.java, "orvix.db")
-                .addMigrations(MIGRATION_1_2)
+                .addMigrations(MIGRATION_1_2, MIGRATION_2_3)
                 .addCallback(object : RoomDatabase.Callback() {
                     override fun onCreate(db: SupportSQLiteDatabase) {
                         super.onCreate(db)
