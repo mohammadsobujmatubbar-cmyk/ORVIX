@@ -53,7 +53,8 @@ data class RelayEntity(
     val name: String,
     val onMessage: String,
     val offMessage: String,
-    val isOn: Boolean = false
+    val isOn: Boolean = false,
+    val icon: String = "light"
 )
 
 @Entity(
@@ -141,7 +142,7 @@ private val MIGRATION_1_2 = object : Migration(1, 2) {
 
 @Database(
     entities = [RoomEntity::class, DeviceEntity::class, RelayEntity::class, SensorEntity::class],
-    version = 3,
+    version = 4,
     exportSchema = false
 )
 abstract class OrvixDatabase : RoomDatabase() {
@@ -158,7 +159,7 @@ abstract class OrvixDatabase : RoomDatabase() {
 
         private fun build(context: Context): OrvixDatabase =
             Room.databaseBuilder(context.applicationContext, OrvixDatabase::class.java, "orvix.db")
-                .addMigrations(MIGRATION_1_2, MIGRATION_2_3)
+                .addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4)
                 .addCallback(object : RoomDatabase.Callback() {
                     override fun onCreate(db: SupportSQLiteDatabase) {
                         super.onCreate(db)

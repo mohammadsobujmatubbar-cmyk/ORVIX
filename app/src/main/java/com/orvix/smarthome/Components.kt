@@ -26,7 +26,7 @@ import androidx.compose.ui.unit.sp
 data class NavItem(val icon: ImageVector, val label: String)
 
 @Composable
-fun GlassCard(modifier: Modifier = Modifier, content: @Composable ColumnScope.() -> Unit) {
+fun GlassCardOld(modifier: Modifier = Modifier, content: @Composable ColumnScope.() -> Unit) {
     val g = LocalGlass.current
     Column(
         modifier = modifier

@@ -243,7 +243,10 @@ fun OrvixApp(
     val sensors by vm.sensors.collectAsState()
     var tab by remember { mutableStateOf(0) }
     var openId by remember { mutableStateOf<Long?>(null) }
+    var openRelayId by remember { mutableStateOf<Long?>(null) }
     val openDevice = devices.firstOrNull { it.id == openId }
+    val openRelay = relays.firstOrNull { it.id == openRelayId }
+    BackHandler(enabled = openRelay != null) { openRelayId = null }
     BackHandler(enabled = openDevice != null) { openId = null }
     val items = listOf(
         NavItem(Icons.Default.Home, s.home),
@@ -253,6 +256,19 @@ fun OrvixApp(
     )
     Box(Modifier.fillMaxSize().background(g.background).statusBarsPadding()) {
         val full = Modifier.fillMaxSize()
+        GlowBackdrop()
+        if (openRelay != null) {
+            val rd = devices.firstOrNull { it.id == openRelay.deviceId }
+            if (rd != null) {
+                RelayDetailScreen(
+                    s = s, relay = openRelay, device = rd,
+                    roomName = rooms.firstOrNull { it.id == rd.roomId }?.name ?: "",
+                    onBack = { openRelayId = null },
+                    onToggle = { on -> vm.sendRelayCmd(rd, openRelay, on) },
+                    modifier = full.navigationBarsPadding()
+                )
+            }
+        } else
         if (openDevice != null) {
             DevicePanelScreen(
                 s = s,
@@ -273,7 +289,7 @@ fun OrvixApp(
             )
         } else {
             when (tab) {
-                0 -> HomeScreen(s, rooms, devices, relays.size, full)
+                0 -> HomeScreenV3(s, rooms, devices, relays.size, { r -> openRelayId = r.id }, full)
                 1 -> RoomsScreen(s, rooms, devices, vm::addRoom, vm::renameRoom, vm::deleteRoom, full)
                 2 -> DevicesScreen(
                     s, rooms, devices, relays, { d -> openId = d.id },

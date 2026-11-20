@@ -22,6 +22,7 @@ fun RelayDialog(
     var name by remember { mutableStateOf(initial?.name ?: "") }
     var onMsg by remember { mutableStateOf(initial?.onMessage ?: "") }
     var offMsg by remember { mutableStateOf(initial?.offMessage ?: "") }
+    var icon by remember { mutableStateOf(initial?.icon ?: "light") }
     var countText by remember { mutableStateOf("1") }
     val count = countText.toIntOrNull() ?: 0
     val adding = initial == null
@@ -41,6 +42,9 @@ fun RelayDialog(
                     label = { Text(s.relayName) },
                     singleLine = true
                 )
+                Row(Modifier.horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    RelayIconKeys.forEach { k -> IconPickChip(k, icon == k) { icon = k } }
+                }
                 if (adding) {
                     OutlinedTextField(
                         value = countText,
@@ -75,13 +79,13 @@ fun RelayDialog(
             TextButton(
                 onClick = {
                     val list = if (initial != null) {
-                        listOf(initial.copy(name = name.trim(), onMessage = onMsg.trim(), offMessage = offMsg.trim()))
+                        listOf(initial.copy(name = name.trim(), onMessage = onMsg.trim(), offMessage = offMsg.trim(), icon = icon))
                     } else if (count > 1) {
                         (1..count).map { i ->
-                            RelayEntity(deviceId = deviceId, name = name.trim() + " " + i, onMessage = "", offMessage = "")
+                            RelayEntity(deviceId = deviceId, name = name.trim() + " " + i, onMessage = "", offMessage = "", icon = icon)
                         }
                     } else {
-                        listOf(RelayEntity(deviceId = deviceId, name = name.trim(), onMessage = onMsg.trim(), offMessage = offMsg.trim()))
+                        listOf(RelayEntity(deviceId = deviceId, name = name.trim(), onMessage = onMsg.trim(), offMessage = offMsg.trim(), icon = icon))
                     }
                     onSave(list)
                 },
