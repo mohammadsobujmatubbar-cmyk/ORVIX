@@ -225,6 +225,8 @@ fun SettingsScreen(
             }
         }
         Spacer(Modifier.height(20.dp))
+        Spacer(Modifier.height(12.dp))
+        BackgroundSettingsCard(s)
         Text("ORVIX 1.0.0", color = g.subText, fontSize = 13.sp)
         Spacer(Modifier.height(120.dp))
     }
@@ -257,6 +259,7 @@ fun OrvixApp(
     Box(Modifier.fillMaxSize().background(g.background).statusBarsPadding()) {
         val full = Modifier.fillMaxSize()
         GlowBackdrop()
+        BackgroundLayer()
         if (openRelay != null) {
             val rd = devices.firstOrNull { it.id == openRelay.deviceId }
             if (rd != null) {
