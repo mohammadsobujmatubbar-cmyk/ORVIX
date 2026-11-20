@@ -176,6 +176,7 @@ fun DevicesScreen(
                 )
                 Spacer(Modifier.height(10.dp))
                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    GlassChip(if (DeviceStatus.map.collectAsState().value[d.id] == true) "● Online" else "○ Offline", false) { }
                     GlassChip(s.open, true) { onOpen(d) }
                     GlassChip(s.edit, false) { editing = d }
                     GlassChip(s.delete, false) { deleting = d }
