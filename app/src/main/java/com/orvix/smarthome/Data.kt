@@ -9,7 +9,8 @@ import kotlinx.coroutines.flow.Flow
 @Entity(tableName = "rooms")
 data class RoomEntity(
     @PrimaryKey(autoGenerate = true) val id: Long = 0,
-    val name: String
+    val name: String,
+    @ColumnInfo(defaultValue = "0") val pinned: Boolean = false
 )
 
 @Entity(
@@ -153,7 +154,7 @@ private val MIGRATION_1_2 = object : Migration(1, 2) {
 
 @Database(
     entities = [RoomEntity::class, DeviceEntity::class, RelayEntity::class, SensorEntity::class, MqttConnEntity::class],
-    version = 7,
+    version = 8,
     exportSchema = false
 )
 abstract class OrvixDatabase : RoomDatabase() {
@@ -170,7 +171,7 @@ abstract class OrvixDatabase : RoomDatabase() {
 
         private fun build(context: Context): OrvixDatabase =
             Room.databaseBuilder(context.applicationContext, OrvixDatabase::class.java, "orvix.db")
-                .addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5, MIGRATION_5_6, MIGRATION_6_7)
+                .addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5, MIGRATION_5_6, MIGRATION_6_7, MIGRATION_7_8)
                 .addCallback(object : RoomDatabase.Callback() {
                     override fun onCreate(db: SupportSQLiteDatabase) {
                         super.onCreate(db)
@@ -193,6 +194,7 @@ class OrvixRepository(private val dao: OrvixDao) {
     suspend fun addRoom(name: String) { dao.insertRoom(RoomEntity(name = name)) }
     suspend fun renameRoom(room: RoomEntity, name: String) { dao.updateRoom(room.copy(name = name)) }
     suspend fun deleteRoom(room: RoomEntity) { dao.deleteRoom(room) }
+    suspend fun setRoomPinned(room: RoomEntity, pinned: Boolean) { dao.updateRoom(room.copy(pinned = pinned)) }
     suspend fun addDevice(device: DeviceEntity) { dao.insertDevice(device) }
     suspend fun updateDevice(device: DeviceEntity) { dao.updateDevice(device) }
     suspend fun deleteDevice(device: DeviceEntity) { dao.deleteDevice(device) }

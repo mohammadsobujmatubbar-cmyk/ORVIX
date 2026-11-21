@@ -91,7 +91,7 @@ fun HomeScreenOld(
 @Composable
 fun RoomsScreen(
     s: Strings, rooms: List<RoomEntity>, devices: List<DeviceEntity>,
-    onAdd: (String) -> Unit, onRename: (RoomEntity, String) -> Unit, onDelete: (RoomEntity) -> Unit,
+    onAdd: (String) -> Unit, onRename: (RoomEntity, String) -> Unit, onDelete: (RoomEntity) -> Unit, onPin: (RoomEntity, Boolean) -> Unit,
     modifier: Modifier = Modifier
 ) {
     val g = LocalGlass.current
@@ -120,6 +120,7 @@ fun RoomsScreen(
                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                     GlassChip(s.edit, false) { editing = r }
                     GlassChip(s.delete, false) { deleting = r }
+                        GlassChip(if (r.pinned) "✓ Home" else "Home", r.pinned) { onPin(r, !r.pinned) }
                 }
             }
         }
@@ -315,7 +316,7 @@ fun OrvixApp(
         } else {
             when (tab) {
                 0 -> HomeScreenV3(s, rooms, devices, relays.size, { r -> openRelayId = r.id }, full)
-                1 -> RoomsScreen(s, rooms, devices, vm::addRoom, vm::renameRoom, vm::deleteRoom, full)
+                1 -> RoomsScreen(s, rooms, devices, vm::addRoom, vm::renameRoom, vm::deleteRoom, vm::setRoomPinned, full)
                 2 -> DevicesScreen(
                     s, rooms, devices, relays, { d -> openId = d.id }, { d -> openMqttId = d.id }, { mqttNew = true },
                     vm::addDevice, vm::updateDevice, vm::deleteDevice, full

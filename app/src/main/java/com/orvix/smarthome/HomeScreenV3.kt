@@ -5,9 +5,6 @@ import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Add
-import androidx.compose.material.icons.filled.Notifications
 import androidx.compose.material3.Text
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -33,7 +30,6 @@ fun HomeScreenV3(
     val scope = rememberCoroutineScope()
     val cmd = CmdStatus.map.collectAsState().value
     val online = DeviceStatus.map.collectAsState().value
-
     LaunchedEffect(devices) {
         while (true) {
             pingAll(devices)
@@ -41,26 +37,31 @@ fun HomeScreenV3(
         }
     }
 
-    var selectedId by remember { mutableStateOf(-1L) }
-    val sel = if (rooms.any { it.id == selectedId }) selectedId else -1L
+    val sortedRooms = rooms.sortedByDescending { it.pinned }
+    var selectedId by remember { mutableStateOf<Long?>(null) }
+    val picked = selectedId
+    val sel: Long = when {
+        picked == -1L -> -1L
+        picked != null && rooms.any { it.id == picked } -> picked
+        else -> sortedRooms.firstOrNull { it.pinned }?.id ?: -1L
+    }
     val shown = if (sel < 0) devices else devices.filter { it.roomId == sel }
     val cards = shown.flatMap { d ->
         allRelays.filter { it.deviceId == d.id }.sortedBy { it.id }.map { r -> Pair(d, r) }
     }
-    val checked = devices.filter { it.checkMessage.isNotBlank() }
 
-    Column(modifier.verticalScroll(rememberScrollState()).padding(horizontal = 20.dp)) {
-        Spacer(Modifier.height(16.dp))
-        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp, Alignment.End)) {
-            RoundIcon(Icons.Default.Notifications, "Notifications")
-            RoundIcon(Icons.Default.Add, "Add")
-        }
-        Spacer(Modifier.height(20.dp))
+    Column(
+        modifier
+            .padding(bottom = 112.dp)
+            .verticalScroll(rememberScrollState())
+            .padding(horizontal = 20.dp)
+    ) {
+        Spacer(Modifier.height(24.dp))
         Text(s.welcome, color = g.text, fontSize = 34.sp, fontWeight = FontWeight.Bold, lineHeight = 40.sp)
         Spacer(Modifier.height(20.dp))
         LazyRow(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
             item { GlassChip(s.all, sel < 0) { selectedId = -1L } }
-            items(rooms, key = { it.id }) { r -> GlassChip(r.name, sel == r.id) { selectedId = r.id } }
+            items(sortedRooms, key = { it.id }) { r -> GlassChip(r.name, sel == r.id) { selectedId = r.id } }
         }
         Spacer(Modifier.height(16.dp))
         Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
@@ -123,17 +124,6 @@ fun HomeScreenV3(
             )
             Spacer(Modifier.height(12.dp))
         }
-
-        GlassCard(Modifier.fillMaxWidth()) {
-            Text(s.systemStatus, color = g.text, fontSize = 18.sp, fontWeight = FontWeight.Medium)
-            Spacer(Modifier.height(6.dp))
-            Text(s.appReady, color = g.subText)
-            if (checked.isEmpty()) {
-                Text(s.notConfigured, color = g.subText)
-            } else {
-                Text("Online: " + checked.count { online[it.id] == true } + " / " + checked.size, color = g.subText)
-            }
-        }
-        Spacer(Modifier.height(120.dp))
+        Spacer(Modifier.height(16.dp))
     }
 }

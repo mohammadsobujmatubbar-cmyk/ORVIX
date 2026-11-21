@@ -29,6 +29,7 @@ class OrvixViewModel(app: Application) : AndroidViewModel(app) {
     fun addRoom(name: String) { viewModelScope.launch { repo.addRoom(name) } }
     fun renameRoom(room: RoomEntity, name: String) { viewModelScope.launch { repo.renameRoom(room, name) } }
     fun deleteRoom(room: RoomEntity) { viewModelScope.launch { repo.deleteRoom(room) } }
+    fun setRoomPinned(room: RoomEntity, pinned: Boolean) { viewModelScope.launch { repo.setRoomPinned(room, pinned) } }
 
     fun addDevice(device: DeviceEntity) { viewModelScope.launch { repo.addDevice(device) } }
     fun updateDevice(device: DeviceEntity) { viewModelScope.launch { repo.updateDevice(device) } }
