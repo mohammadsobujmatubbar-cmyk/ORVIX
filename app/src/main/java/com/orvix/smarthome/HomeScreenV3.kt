@@ -57,8 +57,6 @@ fun HomeScreenV3(
             .padding(horizontal = 20.dp)
     ) {
         Spacer(Modifier.height(24.dp))
-        Text(s.welcome, color = g.text, fontSize = 34.sp, fontWeight = FontWeight.Bold, lineHeight = 40.sp)
-        Spacer(Modifier.height(20.dp))
         LazyRow(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
             item { GlassChip(s.all, sel < 0) { selectedId = -1L } }
             items(sortedRooms, key = { it.id }) { r -> GlassChip(r.name, sel == r.id) { selectedId = r.id } }
