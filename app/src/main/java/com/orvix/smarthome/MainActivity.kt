@@ -17,6 +17,7 @@ class MainActivity : ComponentActivity() {
         MqttManager.init(applicationContext)
         val prefs = getSharedPreferences("orvix_settings", MODE_PRIVATE)
         BgState.load(this)
+        VoiceState.load(this)
         val savedTheme = try {
             ThemeMode.valueOf(prefs.getString("theme", ThemeMode.DARK.name) ?: ThemeMode.DARK.name)
         } catch (e: Exception) {

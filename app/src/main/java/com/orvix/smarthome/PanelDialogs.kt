@@ -23,6 +23,7 @@ fun RelayDialog(
     var onMsg by remember { mutableStateOf(initial?.onMessage ?: "") }
     var offMsg by remember { mutableStateOf(initial?.offMessage ?: "") }
     var topic by remember { mutableStateOf(initial?.topic ?: "") }
+    var alias by remember { mutableStateOf(initial?.alias ?: "") }
     var icon by remember { mutableStateOf(initial?.icon ?: "light") }
     var countText by remember { mutableStateOf("1") }
     val count = countText.toIntOrNull() ?: 0
@@ -65,6 +66,15 @@ fun RelayDialog(
                         singleLine = true
                     )
                 }
+                if (!multi) {
+                    OutlinedTextField(
+                        value = alias,
+                        onValueChange = { alias = it },
+                        label = { Text("Voice names (comma separated)") },
+                        placeholder = { Text("led, light, বাতি") },
+                        singleLine = true
+                    )
+                }
                 if (multi) {
                     Text(s.countHint)
                 } else {
@@ -89,13 +99,13 @@ fun RelayDialog(
             TextButton(
                 onClick = {
                     val list = if (initial != null) {
-                        listOf(initial.copy(name = name.trim(), onMessage = onMsg.trim(), offMessage = offMsg.trim(), icon = icon, topic = topic.trim()))
+                        listOf(initial.copy(name = name.trim(), onMessage = onMsg.trim(), offMessage = offMsg.trim(), icon = icon, topic = topic.trim(), alias = alias.trim()))
                     } else if (count > 1) {
                         (1..count).map { i ->
                             RelayEntity(deviceId = deviceId, name = name.trim() + " " + i, onMessage = "", offMessage = "", icon = icon)
                         }
                     } else {
-                        listOf(RelayEntity(deviceId = deviceId, name = name.trim(), onMessage = onMsg.trim(), offMessage = offMsg.trim(), icon = icon, topic = topic.trim()))
+                        listOf(RelayEntity(deviceId = deviceId, name = name.trim(), onMessage = onMsg.trim(), offMessage = offMsg.trim(), icon = icon, topic = topic.trim(), alias = alias.trim()))
                     }
                     onSave(list)
                 },

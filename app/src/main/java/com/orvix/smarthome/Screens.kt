@@ -230,6 +230,9 @@ fun SettingsScreen(
         Spacer(Modifier.height(20.dp))
         Spacer(Modifier.height(12.dp))
         BackgroundSettingsCard(s)
+        Spacer(Modifier.height(12.dp))
+        VoiceSettingsCard(lang)
+        Spacer(Modifier.height(12.dp))
         Text("ORVIX 1.0.0", color = g.subText, fontSize = 13.sp)
         Spacer(Modifier.height(120.dp))
     }
@@ -268,6 +271,7 @@ fun OrvixApp(
         val full = Modifier.fillMaxSize()
         GlowBackdrop()
         BackgroundLayer()
+        VoiceHost(vm, lang)
         if (openMqtt != null || mqttNew) {
             MqttScreen(
                 s = s, rooms = rooms, device = openMqtt,
@@ -318,7 +322,7 @@ fun OrvixApp(
                 )
                 else -> SettingsScreen(s, lang, mode, onLang, onTheme, full)
             }
-            GlassBottomBar(
+            GlassBottomBarV2(
                 items, tab, { tab = it },
                 Modifier.align(Alignment.BottomCenter).navigationBarsPadding().padding(bottom = 16.dp)
             )
