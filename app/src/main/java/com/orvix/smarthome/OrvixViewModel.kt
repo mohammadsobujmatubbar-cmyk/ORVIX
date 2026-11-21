@@ -32,7 +32,7 @@ class OrvixViewModel(app: Application) : AndroidViewModel(app) {
 
     fun addDevice(device: DeviceEntity) { viewModelScope.launch { repo.addDevice(device) } }
     fun updateDevice(device: DeviceEntity) { viewModelScope.launch { repo.updateDevice(device) } }
-    fun deleteDevice(device: DeviceEntity) { viewModelScope.launch { repo.deleteDevice(device) } }
+    fun deleteDevice(device: DeviceEntity) { viewModelScope.launch { repo.deleteDevice(device); Secrets.put(getApplication<Application>(), "mqtt_pw_" + device.id, "") } }
 
     fun addRelays(list: List<RelayEntity>) { viewModelScope.launch { repo.addRelays(list) } }
     fun updateRelay(relay: RelayEntity) { viewModelScope.launch { repo.updateRelay(relay) } }
@@ -44,4 +44,13 @@ class OrvixViewModel(app: Application) : AndroidViewModel(app) {
     fun deleteSensor(sensor: SensorEntity) { viewModelScope.launch { repo.deleteSensor(sensor) } }
     fun saveMqtt(conn: MqttConnEntity) { viewModelScope.launch { repo.saveMqtt(conn) } }
     fun deleteMqtt(conn: MqttConnEntity) { viewModelScope.launch { repo.deleteMqtt(conn.deviceId) } }
+    fun addMqttDevice(device: DeviceEntity, conn: MqttConnEntity, password: String) {
+        viewModelScope.launch {
+            val id = repo.addMqttDevice(device, conn)
+            Secrets.put(getApplication<Application>(), "mqtt_pw_" + id, password)
+        }
+    }
+    fun updateMqttDevice(device: DeviceEntity, conn: MqttConnEntity) {
+        viewModelScope.launch { repo.updateDevice(device); repo.saveMqtt(conn) }
+    }
 }

@@ -139,7 +139,7 @@ fun RoomsScreen(
 @Composable
 fun DevicesScreen(
     s: Strings, rooms: List<RoomEntity>, devices: List<DeviceEntity>, relays: List<RelayEntity>,
-    onOpen: (DeviceEntity) -> Unit, onMqtt: (DeviceEntity) -> Unit,
+    onOpen: (DeviceEntity) -> Unit, onMqtt: (DeviceEntity) -> Unit, onAddMqtt: () -> Unit,
     onAdd: (DeviceEntity) -> Unit, onUpdate: (DeviceEntity) -> Unit, onDelete: (DeviceEntity) -> Unit,
     modifier: Modifier = Modifier
 ) {
@@ -156,7 +156,10 @@ fun DevicesScreen(
             horizontalArrangement = Arrangement.SpaceBetween
         ) {
             Text(s.devices, color = g.text, fontSize = 30.sp, fontWeight = FontWeight.Bold)
-            GlassButton("+ " + s.addDevice) { showAdd = true }
+            Column(horizontalAlignment = Alignment.End, verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                GlassButton("+ " + s.addDevice) { showAdd = true }
+                GlassButton("+ " + s.mqttTitle) { onAddMqtt() }
+            }
         }
         Spacer(Modifier.height(16.dp))
         if (devices.isEmpty()) {
@@ -178,8 +181,7 @@ fun DevicesScreen(
                     Text(statusText(DeviceStatus.map.collectAsState().value[d.id]), color = g.subText, fontSize = 14.sp)
                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                     GlassChip(s.open, true) { onOpen(d) }
-                    GlassChip("MQTT", false) { onMqtt(d) }
-                    GlassChip(s.edit, false) { editing = d }
+                    GlassChip(s.edit, false) { if (d.type == "MQTT") { onMqtt(d) } else { editing = d } }
                     GlassChip(s.delete, false) { deleting = d }
                 }
             }
@@ -248,13 +250,14 @@ fun OrvixApp(
     var openId by remember { mutableStateOf<Long?>(null) }
     var openRelayId by remember { mutableStateOf<Long?>(null) }
     var openMqttId by remember { mutableStateOf<Long?>(null) }
+    var mqttNew by remember { mutableStateOf(false) }
     val openDevice = devices.firstOrNull { it.id == openId }
     val openRelay = relays.firstOrNull { it.id == openRelayId }
     val mqttConns by vm.mqttConns.collectAsState()
     val openMqtt = devices.firstOrNull { it.id == openMqttId }
     BackHandler(enabled = openRelay != null) { openRelayId = null }
     BackHandler(enabled = openDevice != null) { openId = null }
-    BackHandler(enabled = openMqtt != null) { openMqttId = null }
+    BackHandler(enabled = openMqtt != null || mqttNew) { openMqttId = null; mqttNew = false }
     val items = listOf(
         NavItem(Icons.Default.Home, s.home),
         NavItem(Icons.Default.Place, s.rooms),
@@ -265,13 +268,13 @@ fun OrvixApp(
         val full = Modifier.fillMaxSize()
         GlowBackdrop()
         BackgroundLayer()
-        if (openMqtt != null) {
+        if (openMqtt != null || mqttNew) {
             MqttScreen(
-                s = s, device = openMqtt,
-                roomName = rooms.firstOrNull { it.id == openMqtt.roomId }?.name ?: "",
-                conn = mqttConns.firstOrNull { it.deviceId == openMqtt.id },
-                onSave = vm::saveMqtt, onDelete = vm::deleteMqtt,
-                onBack = { openMqttId = null },
+                s = s, rooms = rooms, device = openMqtt,
+                conn = mqttConns.firstOrNull { it.deviceId == openMqtt?.id },
+                onCreate = vm::addMqttDevice,
+                onUpdate = vm::updateMqttDevice,
+                onBack = { openMqttId = null; mqttNew = false },
                 modifier = full.navigationBarsPadding()
             )
         } else
@@ -310,7 +313,7 @@ fun OrvixApp(
                 0 -> HomeScreenV3(s, rooms, devices, relays.size, { r -> openRelayId = r.id }, full)
                 1 -> RoomsScreen(s, rooms, devices, vm::addRoom, vm::renameRoom, vm::deleteRoom, full)
                 2 -> DevicesScreen(
-                    s, rooms, devices, relays, { d -> openId = d.id }, { d -> openMqttId = d.id },
+                    s, rooms, devices, relays, { d -> openId = d.id }, { d -> openMqttId = d.id }, { mqttNew = true },
                     vm::addDevice, vm::updateDevice, vm::deleteDevice, full
                 )
                 else -> SettingsScreen(s, lang, mode, onLang, onTheme, full)

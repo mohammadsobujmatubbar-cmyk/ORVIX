@@ -203,6 +203,11 @@ class OrvixRepository(private val dao: OrvixDao) {
     suspend fun deleteSensor(sensor: SensorEntity) { dao.deleteSensor(sensor) }
     suspend fun saveMqtt(c: MqttConnEntity) { dao.upsertMqtt(c) }
     suspend fun deleteMqtt(deviceId: Long) { dao.deleteMqtt(deviceId) }
+    suspend fun addMqttDevice(device: DeviceEntity, conn: MqttConnEntity): Long {
+        val id = dao.insertDevice(device)
+        dao.upsertMqtt(conn.copy(deviceId = id))
+        return id
+    }
 }
 
 @Entity(

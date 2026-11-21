@@ -1,5 +1,6 @@
 package com.orvix.smarthome
 
+import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.KeyboardOptions
@@ -19,28 +20,30 @@ import androidx.compose.ui.unit.sp
 @Composable
 fun MqttScreen(
     s: Strings,
-    device: DeviceEntity,
-    roomName: String,
+    rooms: List<RoomEntity>,
+    device: DeviceEntity?,
     conn: MqttConnEntity?,
-    onSave: (MqttConnEntity) -> Unit,
-    onDelete: (MqttConnEntity) -> Unit,
+    onCreate: (DeviceEntity, MqttConnEntity, String) -> Unit,
+    onUpdate: (DeviceEntity, MqttConnEntity) -> Unit,
     onBack: () -> Unit,
     modifier: Modifier = Modifier
 ) {
     val g = LocalGlass.current
     val ctx = LocalContext.current
-    val pwKey = "mqtt_pw_" + device.id
-    var name by remember(conn?.id) { mutableStateOf(conn?.name ?: device.name) }
-    var clientId by remember(conn?.id) { mutableStateOf(conn?.clientId ?: "") }
-    var broker by remember(conn?.id) { mutableStateOf(conn?.broker ?: "") }
-    var portText by remember(conn?.id) { mutableStateOf((conn?.port ?: 1883).toString()) }
-    var tls by remember(conn?.id) { mutableStateOf(conn?.tls ?: false) }
-    var user by remember(conn?.id) { mutableStateOf(conn?.username ?: "") }
-    var pass by remember(conn?.id) { mutableStateOf(Secrets.get(ctx, pwKey)) }
+    var name by remember(device?.id) { mutableStateOf(device?.name ?: "") }
+    var roomId by remember(device?.id) { mutableStateOf(device?.roomId ?: rooms.firstOrNull()?.id ?: -1L) }
+    var clientId by remember(device?.id) { mutableStateOf(conn?.clientId ?: "") }
+    var broker by remember(device?.id) { mutableStateOf(conn?.broker ?: device?.host ?: "") }
+    var portText by remember(device?.id) { mutableStateOf((conn?.port ?: device?.port ?: 1883).toString()) }
+    var tls by remember(device?.id) { mutableStateOf(conn?.tls ?: false) }
+    var user by remember(device?.id) { mutableStateOf(conn?.username ?: "") }
+    var pass by remember(device?.id) {
+        mutableStateOf(if (device != null) Secrets.get(ctx, "mqtt_pw_" + device.id) else "")
+    }
     var showMore by remember { mutableStateOf(false) }
     val port = portText.toIntOrNull()
     val portOk = port != null && port in 1..65535
-    val canSave = name.isNotBlank() && broker.isNotBlank() && portOk
+    val canSave = name.isNotBlank() && broker.isNotBlank() && portOk && rooms.any { it.id == roomId }
 
     Column(modifier.verticalScroll(rememberScrollState()).padding(horizontal = 20.dp)) {
         Spacer(Modifier.height(24.dp))
@@ -49,26 +52,26 @@ fun MqttScreen(
             horizontalArrangement = Arrangement.spacedBy(12.dp)
         ) {
             GlassChip("←", false) { onBack() }
-            Column {
-                Text(
-                    s.mqttTitle + " - " + device.name,
-                    color = g.text, fontSize = 22.sp, fontWeight = FontWeight.Bold
-                )
-                Text(roomName, color = g.subText, fontSize = 13.sp)
-            }
+            Text(s.mqttTitle, color = g.text, fontSize = 28.sp, fontWeight = FontWeight.Bold)
         }
-        Spacer(Modifier.height(12.dp))
-        GlassCard(Modifier.fillMaxWidth()) {
-            Text("MQTT: ◌ " + s.mqttNotConnected, color = g.subText, fontSize = 14.sp)
-        }
+        Spacer(Modifier.height(8.dp))
+        Text("◌ " + s.mqttNotConnected, color = g.subText, fontSize = 13.sp)
         Spacer(Modifier.height(12.dp))
         GlassCard(Modifier.fillMaxWidth()) {
             Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                if (rooms.isEmpty()) Text(s.noRooms, color = g.subText)
                 OutlinedTextField(
                     value = name, onValueChange = { name = it },
                     label = { Text(s.mqttConnName) }, singleLine = true,
                     modifier = Modifier.fillMaxWidth()
                 )
+                Text(s.roomLabel, color = g.subText, fontSize = 14.sp)
+                Row(
+                    Modifier.horizontalScroll(rememberScrollState()),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    rooms.forEach { r -> GlassChip(r.name, roomId == r.id) { roomId = r.id } }
+                }
                 OutlinedTextField(
                     value = broker, onValueChange = { broker = it },
                     label = { Text(s.mqttBroker) },
@@ -118,29 +121,35 @@ fun MqttScreen(
             }
         }
         Spacer(Modifier.height(12.dp))
-        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            GlassButton(s.save) {
-                if (canSave) {
-                    Secrets.put(ctx, pwKey, pass)
-                    onSave(
-                        MqttConnEntity(
-                            id = conn?.id ?: 0,
-                            deviceId = device.id,
-                            name = name.trim(),
-                            clientId = clientId.trim(),
-                            broker = broker.trim(),
-                            port = port ?: 1883,
-                            tls = tls,
-                            username = user.trim()
-                        )
+        GlassButton(s.save) {
+            if (canSave) {
+                val p = port ?: 1883
+                val c = MqttConnEntity(
+                    id = conn?.id ?: 0,
+                    deviceId = device?.id ?: 0,
+                    name = name.trim(),
+                    clientId = clientId.trim(),
+                    broker = broker.trim(),
+                    port = p,
+                    tls = tls,
+                    username = user.trim()
+                )
+                if (device == null) {
+                    onCreate(
+                        DeviceEntity(
+                            roomId = roomId, name = name.trim(), type = "MQTT",
+                            host = broker.trim(), port = p
+                        ),
+                        c, pass
+                    )
+                } else {
+                    Secrets.put(ctx, "mqtt_pw_" + device.id, pass)
+                    onUpdate(
+                        device.copy(roomId = roomId, name = name.trim(), host = broker.trim(), port = p),
+                        c
                     )
                 }
-            }
-            if (conn != null) {
-                GlassChip(s.delete, false) {
-                    Secrets.put(ctx, pwKey, "")
-                    onDelete(conn)
-                }
+                onBack()
             }
         }
         Spacer(Modifier.height(120.dp))
