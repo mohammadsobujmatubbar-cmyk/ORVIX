@@ -23,6 +23,7 @@ fun relayCmdLabel(code: String): String = when (code) {
     "OK" -> "Reply received"
     "SENT" -> "Sent"
     "NOMSG" -> "Message not set"
+    "NOTCONN" -> "Not connected"
     else -> "Error"
 }
 

@@ -21,6 +21,20 @@ suspend fun runRelayCmd(
     on: Boolean,
     save: suspend (RelayEntity) -> Unit
 ) {
+    if (device.type.equals("MQTT", true)) {
+        val mp = if (on) relay.onMessage else relay.offMessage
+        if (relay.topic.isBlank() || mp.isBlank()) {
+            CmdStatus.set(relay.id, "NOMSG")
+            return
+        }
+        if (MqttManager.publish(device.id, relay.topic, mp)) {
+            save(relay.copy(isOn = on))
+            CmdStatus.set(relay.id, "SENT")
+        } else {
+            CmdStatus.set(relay.id, "NOTCONN")
+        }
+        return
+    }
     val msg = if (on) relay.onMessage else relay.offMessage
     if (msg.isBlank()) {
         CmdStatus.set(relay.id, "NOMSG")

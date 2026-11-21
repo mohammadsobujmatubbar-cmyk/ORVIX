@@ -79,6 +79,7 @@ fun DevicePanelScreen(
                 ) {
                     Column(Modifier.weight(1f)) {
                         Text(r.name, color = g.text, fontSize = 18.sp, fontWeight = FontWeight.Medium)
+                        if (device.type.equals("MQTT", true)) Text("Topic: " + r.topic.ifBlank { s.notSet }, color = g.subText, fontSize = 12.sp)
                         Text("ON: " + r.onMessage.ifBlank { s.notSet }, color = g.subText, fontSize = 12.sp)
                         Text("OFF: " + r.offMessage.ifBlank { s.notSet }, color = g.subText, fontSize = 12.sp)
                             val stc = CmdStatus.map.collectAsState().value[r.id]; if (stc != null) Text(relayCmdLabel(stc), color = g.subText, fontSize = 12.sp)
@@ -125,12 +126,12 @@ fun DevicePanelScreen(
     }
 
     if (showAddRelay) {
-        RelayDialog(s, s.addRelay, device.id, null, { showAddRelay = false }) {
+        RelayDialog(s, s.addRelay, device.id, null, { showAddRelay = false }, mqtt = device.type.equals("MQTT", true)) {
             onAddRelays(it); showAddRelay = false
         }
     }
     editingRelay?.let { r ->
-        RelayDialog(s, s.editRelay, device.id, r, { editingRelay = null }) {
+        RelayDialog(s, s.editRelay, device.id, r, { editingRelay = null }, mqtt = device.type.equals("MQTT", true)) {
             onUpdateRelay(it.first()); editingRelay = null
         }
     }
@@ -138,12 +139,12 @@ fun DevicePanelScreen(
         ConfirmDialog(s.delete, s.deleteRelayMsg, s.delete, s.cancel, { onDeleteRelay(r); deletingRelay = null }, { deletingRelay = null })
     }
     if (showAddSensor) {
-        SensorDialog(s, s.addSensor, device.id, null, { showAddSensor = false }) {
+        SensorDialog(s, s.addSensor, device.id, null, { showAddSensor = false }, mqtt = device.type.equals("MQTT", true)) {
             onAddSensor(it); showAddSensor = false
         }
     }
     editingSensor?.let { sn ->
-        SensorDialog(s, s.editSensor, device.id, sn, { editingSensor = null }) {
+        SensorDialog(s, s.editSensor, device.id, sn, { editingSensor = null }, mqtt = device.type.equals("MQTT", true)) {
             onUpdateSensor(it); editingSensor = null
         }
     }

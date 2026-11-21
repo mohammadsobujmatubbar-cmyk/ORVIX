@@ -57,7 +57,7 @@ fun MqttScreen(
         Spacer(Modifier.height(8.dp))
         Text("◌ " + s.mqttNotConnected, color = g.subText, fontSize = 13.sp)
         Spacer(Modifier.height(12.dp))
-        GlassCard(Modifier.fillMaxWidth()) {
+        DarkGlassCard(Modifier.fillMaxWidth()) {
             Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
                 if (rooms.isEmpty()) Text(s.noRooms, color = g.subText)
                 OutlinedTextField(

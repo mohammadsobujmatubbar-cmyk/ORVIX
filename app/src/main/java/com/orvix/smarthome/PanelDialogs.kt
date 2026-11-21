@@ -17,11 +17,12 @@ import androidx.compose.ui.unit.dp
 @Composable
 fun RelayDialog(
     s: Strings, title: String, deviceId: Long, initial: RelayEntity?,
-    onDismiss: () -> Unit, onSave: (List<RelayEntity>) -> Unit
+    onDismiss: () -> Unit, mqtt: Boolean = false, onSave: (List<RelayEntity>) -> Unit
 ) {
     var name by remember { mutableStateOf(initial?.name ?: "") }
     var onMsg by remember { mutableStateOf(initial?.onMessage ?: "") }
     var offMsg by remember { mutableStateOf(initial?.offMessage ?: "") }
+    var topic by remember { mutableStateOf(initial?.topic ?: "") }
     var icon by remember { mutableStateOf(initial?.icon ?: "light") }
     var countText by remember { mutableStateOf("1") }
     val count = countText.toIntOrNull() ?: 0
@@ -55,20 +56,29 @@ fun RelayDialog(
                         isError = !countOk
                     )
                 }
+                if (mqtt && !multi) {
+                    OutlinedTextField(
+                        value = topic,
+                        onValueChange = { topic = it },
+                        label = { Text("Topic") },
+                        placeholder = { Text("orvix/room/light1") },
+                        singleLine = true
+                    )
+                }
                 if (multi) {
                     Text(s.countHint)
                 } else {
                     OutlinedTextField(
                         value = onMsg,
                         onValueChange = { onMsg = it },
-                        label = { Text(s.onMessage) },
+                        label = { Text(if (mqtt) "ON payload" else s.onMessage) },
                         placeholder = { Text("LIGHT_ON") },
                         singleLine = true
                     )
                     OutlinedTextField(
                         value = offMsg,
                         onValueChange = { offMsg = it },
-                        label = { Text(s.offMessage) },
+                        label = { Text(if (mqtt) "OFF payload" else s.offMessage) },
                         placeholder = { Text("LIGHT_OFF") },
                         singleLine = true
                     )
@@ -79,13 +89,13 @@ fun RelayDialog(
             TextButton(
                 onClick = {
                     val list = if (initial != null) {
-                        listOf(initial.copy(name = name.trim(), onMessage = onMsg.trim(), offMessage = offMsg.trim(), icon = icon))
+                        listOf(initial.copy(name = name.trim(), onMessage = onMsg.trim(), offMessage = offMsg.trim(), icon = icon, topic = topic.trim()))
                     } else if (count > 1) {
                         (1..count).map { i ->
                             RelayEntity(deviceId = deviceId, name = name.trim() + " " + i, onMessage = "", offMessage = "", icon = icon)
                         }
                     } else {
-                        listOf(RelayEntity(deviceId = deviceId, name = name.trim(), onMessage = onMsg.trim(), offMessage = offMsg.trim(), icon = icon))
+                        listOf(RelayEntity(deviceId = deviceId, name = name.trim(), onMessage = onMsg.trim(), offMessage = offMsg.trim(), icon = icon, topic = topic.trim()))
                     }
                     onSave(list)
                 },
@@ -99,7 +109,7 @@ fun RelayDialog(
 @Composable
 fun SensorDialog(
     s: Strings, title: String, deviceId: Long, initial: SensorEntity?,
-    onDismiss: () -> Unit, onSave: (SensorEntity) -> Unit
+    onDismiss: () -> Unit, mqtt: Boolean = false, onSave: (SensorEntity) -> Unit
 ) {
     var name by remember { mutableStateOf(initial?.name ?: "") }
     var type by remember { mutableStateOf(initial?.type ?: "Temperature") }
@@ -130,7 +140,7 @@ fun SensorDialog(
                 OutlinedTextField(
                     value = config,
                     onValueChange = { config = it },
-                    label = { Text(s.sensorConfig) },
+                    label = { Text(if (mqtt) "Topic" else s.sensorConfig) },
                     singleLine = true
                 )
             }
