@@ -23,7 +23,7 @@ private val iconWords = mapOf(
 private val splitter = Regex("[\\s,.!?।;:_-]+")
 
 private fun toks(t: String): List<String> =
-    t.lowercase().split(splitter).filter { it.isNotBlank() }
+    t.lowercase().split(splitter).filter { it.isNotBlank() }.map { normTok(it) }
 
 fun parseVoice(
     text: String,
@@ -32,7 +32,7 @@ fun parseVoice(
     relays: List<RelayEntity>
 ): VoiceParse {
     val ws = toks(text)
-    val set = ws.toSet()
+    val set = ws.toSet().let { s0 -> if ("light" in s0) s0 + "led" else s0 }
     val hasOn = ws.any { it in onWords }
     val hasOff = ws.any { it in offWords }
     if (hasOn == hasOff) return VoiceParse.NoMatch
@@ -77,7 +77,7 @@ fun parseVoice(
         var score = 0
         for (n in names) {
             val t = toks(n)
-            if (t.isNotEmpty() && t.all { it in set } && t.size > score) score = t.size
+            if (t.isNotEmpty() && t.filter { it !in genericWords }.ifEmpty { t }.all { it in set } && t.size > score) score = t.size
         }
         if (score > 0) {
             if (score > best) {
