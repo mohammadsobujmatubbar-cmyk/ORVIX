@@ -104,7 +104,7 @@ object MqttManager {
             val client = b
                 .automaticReconnectWithDefaultConfig()
                 .addConnectedListener { setStatus(id, true, "") }
-                .addDisconnectedListener { dc -> setStatus(id, false, reasonOf(dc.cause)) }
+                .addDisconnectedListener { dc -> setStatus(id, false, reasonOf(dc.cause, c.username.isBlank())) }
                 .buildAsync()
             val entry = Entry(key, client)
             clients[id] = entry
@@ -118,7 +118,7 @@ object MqttManager {
             fut.whenComplete { _, err ->
                 if (err != null) {
                     entry.failed = true
-                    setStatus(id, false, reasonOf(err))
+                    setStatus(id, false, reasonOf(err, c.username.isBlank()))
                 }
             }
         } catch (e: Exception) {
@@ -144,7 +144,7 @@ object MqttManager {
         detail.update { it + (id to text) }
     }
 
-    private fun reasonOf(t: Throwable?): String {
+    private fun reasonOf(t: Throwable?, noUser: Boolean = false): String {
         var e = t
         var text = ""
         var depth = 0
@@ -154,6 +154,7 @@ object MqttManager {
             depth++
         }
         return when {
+            text.contains("NOT_AUTHORIZED") && noUser -> "username/password not set"
             text.contains("BAD_USER_NAME_OR_PASSWORD") || text.contains("NOT_AUTHORIZED") -> "wrong username/password"
             text.contains("UnknownHost", true) || text.contains("resolve", true) -> "broker address not found"
             text.contains("timed out", true) || text.contains("timeout", true) -> "timed out"
