@@ -9,6 +9,8 @@
         android:icon="@mipmap/ic_launcher"
         android:roundIcon="@mipmap/ic_launcher"
         android:allowBackup="true"
+        android:fullBackupContent="@xml/orvix_backup_rules"
+        android:dataExtractionRules="@xml/orvix_data_rules"
         android:label="ORVIX"
         android:theme="@android:style/Theme.Material.Light.NoActionBar">
 

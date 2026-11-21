@@ -129,6 +129,15 @@ interface OrvixDao {
 
     @Delete
     suspend fun deleteSensor(sensor: SensorEntity)
+
+    @Query("SELECT * FROM mqtt_connections ORDER BY id")
+    fun observeMqtt(): Flow<List<MqttConnEntity>>
+
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun upsertMqtt(conn: MqttConnEntity)
+
+    @Query("DELETE FROM mqtt_connections WHERE deviceId = :deviceId")
+    suspend fun deleteMqtt(deviceId: Long)
 }
 
 private val MIGRATION_1_2 = object : Migration(1, 2) {
@@ -141,8 +150,8 @@ private val MIGRATION_1_2 = object : Migration(1, 2) {
 }
 
 @Database(
-    entities = [RoomEntity::class, DeviceEntity::class, RelayEntity::class, SensorEntity::class],
-    version = 4,
+    entities = [RoomEntity::class, DeviceEntity::class, RelayEntity::class, SensorEntity::class, MqttConnEntity::class],
+    version = 5,
     exportSchema = false
 )
 abstract class OrvixDatabase : RoomDatabase() {
@@ -159,7 +168,7 @@ abstract class OrvixDatabase : RoomDatabase() {
 
         private fun build(context: Context): OrvixDatabase =
             Room.databaseBuilder(context.applicationContext, OrvixDatabase::class.java, "orvix.db")
-                .addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4)
+                .addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5)
                 .addCallback(object : RoomDatabase.Callback() {
                     override fun onCreate(db: SupportSQLiteDatabase) {
                         super.onCreate(db)
@@ -177,6 +186,7 @@ class OrvixRepository(private val dao: OrvixDao) {
     val devices: Flow<List<DeviceEntity>> = dao.observeDevices()
     val relays: Flow<List<RelayEntity>> = dao.observeRelays()
     val sensors: Flow<List<SensorEntity>> = dao.observeSensors()
+    val mqtt: Flow<List<MqttConnEntity>> = dao.observeMqtt()
 
     suspend fun addRoom(name: String) { dao.insertRoom(RoomEntity(name = name)) }
     suspend fun renameRoom(room: RoomEntity, name: String) { dao.updateRoom(room.copy(name = name)) }
@@ -191,4 +201,29 @@ class OrvixRepository(private val dao: OrvixDao) {
     suspend fun addSensor(sensor: SensorEntity) { dao.insertSensor(sensor) }
     suspend fun updateSensor(sensor: SensorEntity) { dao.updateSensor(sensor) }
     suspend fun deleteSensor(sensor: SensorEntity) { dao.deleteSensor(sensor) }
+    suspend fun saveMqtt(c: MqttConnEntity) { dao.upsertMqtt(c) }
+    suspend fun deleteMqtt(deviceId: Long) { dao.deleteMqtt(deviceId) }
 }
+
+@Entity(
+    tableName = "mqtt_connections",
+    foreignKeys = [
+        ForeignKey(
+            entity = DeviceEntity::class,
+            parentColumns = ["id"],
+            childColumns = ["deviceId"],
+            onDelete = ForeignKey.CASCADE
+        )
+    ],
+    indices = [Index(value = ["deviceId"], unique = true)]
+)
+data class MqttConnEntity(
+    @PrimaryKey(autoGenerate = true) val id: Long = 0,
+    val deviceId: Long,
+    val name: String,
+    val clientId: String,
+    val broker: String,
+    val port: Int,
+    val tls: Boolean,
+    val username: String
+)

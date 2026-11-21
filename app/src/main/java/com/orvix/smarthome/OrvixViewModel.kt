@@ -23,6 +23,9 @@ class OrvixViewModel(app: Application) : AndroidViewModel(app) {
     val sensors: StateFlow<List<SensorEntity>> =
         repo.sensors.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
+    val mqttConns: StateFlow<List<MqttConnEntity>> =
+        repo.mqtt.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
+
     fun addRoom(name: String) { viewModelScope.launch { repo.addRoom(name) } }
     fun renameRoom(room: RoomEntity, name: String) { viewModelScope.launch { repo.renameRoom(room, name) } }
     fun deleteRoom(room: RoomEntity) { viewModelScope.launch { repo.deleteRoom(room) } }
@@ -39,4 +42,6 @@ class OrvixViewModel(app: Application) : AndroidViewModel(app) {
     fun addSensor(sensor: SensorEntity) { viewModelScope.launch { repo.addSensor(sensor) } }
     fun updateSensor(sensor: SensorEntity) { viewModelScope.launch { repo.updateSensor(sensor) } }
     fun deleteSensor(sensor: SensorEntity) { viewModelScope.launch { repo.deleteSensor(sensor) } }
+    fun saveMqtt(conn: MqttConnEntity) { viewModelScope.launch { repo.saveMqtt(conn) } }
+    fun deleteMqtt(conn: MqttConnEntity) { viewModelScope.launch { repo.deleteMqtt(conn.deviceId) } }
 }

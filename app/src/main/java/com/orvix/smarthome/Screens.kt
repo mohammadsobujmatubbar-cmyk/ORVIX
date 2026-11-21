@@ -139,7 +139,7 @@ fun RoomsScreen(
 @Composable
 fun DevicesScreen(
     s: Strings, rooms: List<RoomEntity>, devices: List<DeviceEntity>, relays: List<RelayEntity>,
-    onOpen: (DeviceEntity) -> Unit,
+    onOpen: (DeviceEntity) -> Unit, onMqtt: (DeviceEntity) -> Unit,
     onAdd: (DeviceEntity) -> Unit, onUpdate: (DeviceEntity) -> Unit, onDelete: (DeviceEntity) -> Unit,
     modifier: Modifier = Modifier
 ) {
@@ -178,6 +178,7 @@ fun DevicesScreen(
                     Text(statusText(DeviceStatus.map.collectAsState().value[d.id]), color = g.subText, fontSize = 14.sp)
                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                     GlassChip(s.open, true) { onOpen(d) }
+                    GlassChip("MQTT", false) { onMqtt(d) }
                     GlassChip(s.edit, false) { editing = d }
                     GlassChip(s.delete, false) { deleting = d }
                 }
@@ -246,10 +247,14 @@ fun OrvixApp(
     var tab by remember { mutableStateOf(0) }
     var openId by remember { mutableStateOf<Long?>(null) }
     var openRelayId by remember { mutableStateOf<Long?>(null) }
+    var openMqttId by remember { mutableStateOf<Long?>(null) }
     val openDevice = devices.firstOrNull { it.id == openId }
     val openRelay = relays.firstOrNull { it.id == openRelayId }
+    val mqttConns by vm.mqttConns.collectAsState()
+    val openMqtt = devices.firstOrNull { it.id == openMqttId }
     BackHandler(enabled = openRelay != null) { openRelayId = null }
     BackHandler(enabled = openDevice != null) { openId = null }
+    BackHandler(enabled = openMqtt != null) { openMqttId = null }
     val items = listOf(
         NavItem(Icons.Default.Home, s.home),
         NavItem(Icons.Default.Place, s.rooms),
@@ -260,6 +265,16 @@ fun OrvixApp(
         val full = Modifier.fillMaxSize()
         GlowBackdrop()
         BackgroundLayer()
+        if (openMqtt != null) {
+            MqttScreen(
+                s = s, device = openMqtt,
+                roomName = rooms.firstOrNull { it.id == openMqtt.roomId }?.name ?: "",
+                conn = mqttConns.firstOrNull { it.deviceId == openMqtt.id },
+                onSave = vm::saveMqtt, onDelete = vm::deleteMqtt,
+                onBack = { openMqttId = null },
+                modifier = full.navigationBarsPadding()
+            )
+        } else
         if (openRelay != null) {
             val rd = devices.firstOrNull { it.id == openRelay.deviceId }
             if (rd != null) {
@@ -295,7 +310,7 @@ fun OrvixApp(
                 0 -> HomeScreenV3(s, rooms, devices, relays.size, { r -> openRelayId = r.id }, full)
                 1 -> RoomsScreen(s, rooms, devices, vm::addRoom, vm::renameRoom, vm::deleteRoom, full)
                 2 -> DevicesScreen(
-                    s, rooms, devices, relays, { d -> openId = d.id },
+                    s, rooms, devices, relays, { d -> openId = d.id }, { d -> openMqttId = d.id },
                     vm::addDevice, vm::updateDevice, vm::deleteDevice, full
                 )
                 else -> SettingsScreen(s, lang, mode, onLang, onTheme, full)
