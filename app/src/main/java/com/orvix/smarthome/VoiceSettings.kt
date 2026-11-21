@@ -42,6 +42,13 @@ fun VoiceSettingsCard(lang: Lang) {
             GlassChip("English", VoiceState.lang == "EN") { VoiceState.setLang(ctx, "EN") }
             GlassChip("বাংলা", VoiceState.lang == "BN") { VoiceState.setLang(ctx, "BN") }
         }
+        Spacer(Modifier.height(14.dp))
+        Text(vs.reply, color = g.subText, fontSize = 13.sp)
+        Spacer(Modifier.height(6.dp))
+        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            GlassChip(vs.on, VoiceState.reply) { VoiceState.setReply(ctx, true) }
+            GlassChip(vs.off, !VoiceState.reply) { VoiceState.setReply(ctx, false) }
+        }
         Spacer(Modifier.height(12.dp))
         Text(vs.note, color = g.subText, fontSize = 12.sp)
     }

@@ -5,8 +5,10 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -19,6 +21,7 @@ import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -92,32 +95,67 @@ private fun VoiceNavButton(item: NavItem, selected: Boolean, onClick: () -> Unit
 }
 
 @Composable
-fun GlassBottomBarV2(items: List<NavItem>, selected: Int, onSelect: (Int) -> Unit, modifier: Modifier = Modifier) {
-    val g = LocalGlass.current
+private fun VoiceLogPanel() {
     val vs = voiceStrings(VoiceState.uiLang)
-    val mid = items.size / 2
-    val heard = VoiceState.heard
-    val res = VoiceState.result
-    Column(modifier, horizontalAlignment = Alignment.CenterHorizontally) {
-        if (VoiceState.listening || heard.isNotBlank() || res.isNotBlank()) {
-            Column(
+    Column(
+        Modifier
+            .padding(horizontal = 20.dp)
+            .padding(bottom = 10.dp)
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(20.dp))
+            .background(Color(0xE6101216))
+            .padding(horizontal = 16.dp, vertical = 10.dp)
+    ) {
+        Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+            Text(
+                if (VoiceState.listening) vs.listening else vs.title,
+                color = if (VoiceState.listening) Accent else Color(0xB3FFFFFF),
+                fontSize = 13.sp,
+                fontWeight = FontWeight.Medium,
+                modifier = Modifier.weight(1f)
+            )
+            Box(
                 Modifier
-                    .padding(bottom = 10.dp)
-                    .clip(RoundedCornerShape(20.dp))
-                    .background(Color(0xDD101216))
-                    .padding(horizontal = 16.dp, vertical = 10.dp)
+                    .size(32.dp)
+                    .clip(CircleShape)
+                    .clickable { VoiceState.clearAll() },
+                contentAlignment = Alignment.Center
             ) {
-                if (heard.isNotBlank()) {
-                    Text(vs.heardLabel + ": " + heard, color = Color(0xB3FFFFFF), fontSize = 12.sp)
-                }
-                if (res.isNotBlank()) {
-                    Text(res, color = Color.White, fontSize = 15.sp, fontWeight = FontWeight.Medium)
-                }
-                if (heard.isBlank() && res.isBlank()) {
-                    Text(vs.listening, color = Color.White, fontSize = 15.sp)
-                }
+                Text("×", color = Color.White, fontSize = 22.sp)
             }
         }
+        Column(
+            Modifier
+                .heightIn(max = 200.dp)
+                .verticalScroll(rememberScrollState())
+        ) {
+            VoiceState.log.forEach { line ->
+                Text(line, color = Color.White, fontSize = 14.sp)
+                Spacer(Modifier.height(4.dp))
+            }
+            if (VoiceState.partial.isNotBlank()) {
+                Text(
+                    "... " + VoiceState.partial,
+                    color = Color(0xCCFFFFFF),
+                    fontSize = 14.sp,
+                    fontStyle = FontStyle.Italic
+                )
+            }
+            if (VoiceState.note.isNotBlank()) {
+                Text(VoiceState.note, color = Color(0xFFFFB74D), fontSize = 13.sp)
+            }
+        }
+    }
+}
+
+@Composable
+fun GlassBottomBarV2(items: List<NavItem>, selected: Int, onSelect: (Int) -> Unit, modifier: Modifier = Modifier) {
+    val g = LocalGlass.current
+    val mid = items.size / 2
+    val showPanel = VoiceState.listening || VoiceState.log.isNotEmpty() ||
+        VoiceState.partial.isNotBlank() || VoiceState.note.isNotBlank()
+    Column(modifier, horizontalAlignment = Alignment.CenterHorizontally) {
+        if (showPanel) VoiceLogPanel()
         Row(
             Modifier
                 .clip(CircleShape)

@@ -6,7 +6,8 @@ data class VoiceStrings(
     val language: String, val note: String,
     val enableFirst: String, val needPerm: String, val unavailable: String,
     val listening: String, val heardLabel: String, val noMatch: String, val ambiguous: String,
-    val stopped: String, val timeUp: String, val allDone: String, val error: String
+    val stopped: String, val timeUp: String, val allDone: String, val error: String,
+    val reply: String, val sorry: String, val ambiguousSpoken: String, val ttsMissing: String
 )
 
 private val enV = VoiceStrings(
@@ -21,7 +22,11 @@ private val enV = VoiceStrings(
     noMatch = "No matching relay",
     ambiguous = "More than one match. Say the room or device name",
     stopped = "Voice stopped", timeUp = "Voice time is up", allDone = "All",
-    error = "Voice error"
+    error = "Voice error",
+    reply = "Spoken reply",
+    sorry = "I'm sorry, I didn't understand",
+    ambiguousSpoken = "More than one match. Please say the room or device name",
+    ttsMissing = "Spoken reply is not available for this language on this phone"
 )
 
 private val bnV = VoiceStrings(
@@ -36,7 +41,11 @@ private val bnV = VoiceStrings(
     noMatch = "মেলে এমন রিলে নেই",
     ambiguous = "একাধিক মিল পাওয়া গেছে। রুম বা ডিভাইসের নাম বলুন",
     stopped = "ভয়েস বন্ধ", timeUp = "ভয়েসের সময় শেষ", allDone = "সব",
-    error = "ভয়েসে সমস্যা"
+    error = "ভয়েসে সমস্যা",
+    reply = "ভয়েসে উত্তর",
+    sorry = "দুঃখিত, আমি কিছু বুঝতে পারছি না",
+    ambiguousSpoken = "একাধিক মিল পাওয়া গেছে। রুম বা ডিভাইসের নাম বলুন",
+    ttsMissing = "এই ফোনে এই ভাষায় কথা বলার সুবিধা নেই"
 )
 
 fun voiceStrings(lang: Lang): VoiceStrings = if (lang == Lang.BN) bnV else enV

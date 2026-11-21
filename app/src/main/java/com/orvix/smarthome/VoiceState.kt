@@ -2,6 +2,7 @@ package com.orvix.smarthome
 
 import android.content.Context
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 
@@ -9,10 +10,11 @@ object VoiceState {
     var enabled by mutableStateOf(false)
     var durIdx by mutableStateOf(1)
     var lang by mutableStateOf("EN")
+    var reply by mutableStateOf(true)
     var listening by mutableStateOf(false)
-    var heard by mutableStateOf("")
-    var result by mutableStateOf("")
-    var stamp by mutableStateOf(0L)
+    var partial by mutableStateOf("")
+    var note by mutableStateOf("")
+    val log = mutableStateListOf<String>()
     var uiLang by mutableStateOf(Lang.EN)
     var onMicTap: (() -> Unit)? = null
 
@@ -24,6 +26,7 @@ object VoiceState {
         enabled = p.getBoolean("voice_on", false)
         durIdx = p.getInt("voice_dur", 1)
         lang = p.getString("voice_lang", "EN") ?: "EN"
+        reply = p.getBoolean("voice_reply", true)
     }
 
     fun setEnabled(ctx: Context, v: Boolean) {
@@ -41,6 +44,11 @@ object VoiceState {
         prefs(ctx).edit().putString("voice_lang", v).apply()
     }
 
+    fun setReply(ctx: Context, v: Boolean) {
+        reply = v
+        prefs(ctx).edit().putBoolean("voice_reply", v).apply()
+    }
+
     fun durationMs(): Long = when (durIdx) {
         0 -> 30000L
         1 -> 60000L
@@ -48,14 +56,19 @@ object VoiceState {
         else -> 86400000L
     }
 
-    fun bubble(h: String, r: String) {
-        heard = h
-        result = r
-        stamp = System.currentTimeMillis()
+    fun addLog(line: String) {
+        log.add(line)
+        while (log.size > 8) log.removeAt(0)
     }
 
-    fun clearBubble() {
-        heard = ""
-        result = ""
+    fun replaceLog(old: String, new: String) {
+        val i = log.indexOf(old)
+        if (i >= 0) log[i] = new
+    }
+
+    fun clearAll() {
+        log.clear()
+        partial = ""
+        note = ""
     }
 }

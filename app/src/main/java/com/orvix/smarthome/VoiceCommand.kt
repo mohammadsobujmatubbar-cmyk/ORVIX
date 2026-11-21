@@ -13,6 +13,13 @@ sealed class VoiceParse {
 private val onWords = setOf("on", "start", "চালু", "চালাও", "অন", "জ্বালাও", "জ্বালিয়ে", "জ্বেলে", "চালান", "চালিয়ে")
 private val offWords = setOf("off", "stop", "বন্ধ", "অফ", "নিভাও", "নেভাও", "নিভিয়ে", "নিভান", "নিভে")
 private val allWords = setOf("all", "everything", "সব", "সকল", "সবগুলো", "সবগুলি", "সবকিছু")
+private val iconWords = mapOf(
+    "light" to setOf("light", "lights", "lamp", "bulb", "লাইট", "বাতি", "আলো", "ল্যাম্প", "বালব"),
+    "fan" to setOf("fan", "fans", "ফ্যান", "পাখা"),
+    "tv" to setOf("tv", "television", "টিভি", "টেলিভিশন"),
+    "ac" to setOf("ac", "aircon", "এসি", "এয়ারকন্ডিশনার"),
+    "plug" to setOf("plug", "socket", "প্লাগ", "সকেট")
+)
 private val splitter = Regex("[\\s,.!?।;:_-]+")
 
 private fun toks(t: String): List<String> =
@@ -40,8 +47,27 @@ fun parseVoice(
         t.isNotEmpty() && t.all { it in set }
     }
 
+    fun finish(cands: List<RelayEntity>, all: Boolean): VoiceParse {
+        var c = cands
+        val byDev = c.filter { r -> spokenDevs.any { it.id == r.deviceId } }
+        if (byDev.isNotEmpty()) {
+            c = byDev
+        } else if (spokenRooms.isNotEmpty()) {
+            val byRoom = c.filter { r ->
+                val d = devById[r.deviceId]
+                d != null && spokenRooms.any { it.id == d.roomId }
+            }
+            if (byRoom.isEmpty()) return VoiceParse.NoMatch
+            c = byRoom
+        }
+        if (!all && c.map { it.deviceId }.toSet().size > 1) return VoiceParse.Ambiguous
+        val pairs = c.mapNotNull { r -> devById[r.deviceId]?.let { d -> Pair(d, r) } }
+        if (pairs.isEmpty()) return VoiceParse.NoMatch
+        return VoiceParse.Act(pairs, turnOn, all)
+    }
+
     var best = 0
-    val matched = ArrayList<RelayEntity>()
+    val named = ArrayList<RelayEntity>()
     for (r in relays) {
         val names = ArrayList<String>()
         names.add(r.name)
@@ -56,45 +82,19 @@ fun parseVoice(
         if (score > 0) {
             if (score > best) {
                 best = score
-                matched.clear()
+                named.clear()
             }
-            if (score == best) matched.add(r)
+            if (score == best) named.add(r)
         }
     }
+    if (named.isNotEmpty()) return finish(named, false)
 
-    if (matched.isNotEmpty()) {
-        var c: List<RelayEntity> = matched
-        val byDev = c.filter { r -> spokenDevs.any { it.id == r.deviceId } }
-        if (byDev.isNotEmpty()) {
-            c = byDev
-        } else if (spokenRooms.isNotEmpty()) {
-            val byRoom = c.filter { r ->
-                val d = devById[r.deviceId]
-                d != null && spokenRooms.any { it.id == d.roomId }
-            }
-            if (byRoom.isEmpty()) return VoiceParse.NoMatch
-            c = byRoom
-        }
-        if (c.map { it.deviceId }.toSet().size > 1) return VoiceParse.Ambiguous
-        val pairs = c.mapNotNull { r -> devById[r.deviceId]?.let { d -> Pair(d, r) } }
-        if (pairs.isEmpty()) return VoiceParse.NoMatch
-        return VoiceParse.Act(pairs, turnOn, false)
+    val byIcon = relays.filter { r ->
+        val w = iconWords[r.icon]
+        w != null && w.any { it in set }
     }
+    if (byIcon.isNotEmpty()) return finish(byIcon, false)
 
-    if (ws.any { it in allWords }) {
-        var c: List<RelayEntity> = relays
-        val byDev = c.filter { r -> spokenDevs.any { it.id == r.deviceId } }
-        if (byDev.isNotEmpty()) {
-            c = byDev
-        } else if (spokenRooms.isNotEmpty()) {
-            c = c.filter { r ->
-                val d = devById[r.deviceId]
-                d != null && spokenRooms.any { it.id == d.roomId }
-            }
-        }
-        val pairs = c.mapNotNull { r -> devById[r.deviceId]?.let { d -> Pair(d, r) } }
-        if (pairs.isEmpty()) return VoiceParse.NoMatch
-        return VoiceParse.Act(pairs, turnOn, true)
-    }
+    if (ws.any { it in allWords }) return finish(relays, true)
     return VoiceParse.NoMatch
 }
