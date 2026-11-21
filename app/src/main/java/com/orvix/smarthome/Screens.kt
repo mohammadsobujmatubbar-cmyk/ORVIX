@@ -234,6 +234,8 @@ fun SettingsScreen(
         Spacer(Modifier.height(12.dp))
         VoiceSettingsCard(lang)
         Spacer(Modifier.height(12.dp))
+        BackupCard(lang, mode, onLang, onTheme)
+        Spacer(Modifier.height(12.dp))
         Text("ORVIX 1.0.0", color = g.subText, fontSize = 13.sp)
         Spacer(Modifier.height(120.dp))
     }
