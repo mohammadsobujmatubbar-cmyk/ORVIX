@@ -5,16 +5,38 @@ plugins {
     id 'org.jetbrains.kotlin.kapt'
 }
 
+def runNum = (System.getenv('GITHUB_RUN_NUMBER') ?: '1').toInteger()
+
 android {
     namespace 'com.orvix.smarthome'
     compileSdk 35
+
+    signingConfigs {
+        orvix {
+            def ks = System.getenv('KEYSTORE_PATH')
+            if (ks) {
+                storeFile file(ks)
+                storePassword System.getenv('KEYSTORE_PASSWORD')
+                keyAlias System.getenv('KEY_ALIAS')
+                keyPassword System.getenv('KEY_PASSWORD')
+            }
+        }
+    }
 
     defaultConfig {
         applicationId 'com.orvix.smarthome'
         minSdk 23
         targetSdk 35
-        versionCode 1
-        versionName '1.0.0'
+        versionCode runNum
+        versionName "1.0.${runNum}"
+    }
+
+    buildTypes {
+        debug {
+            if (System.getenv('KEYSTORE_PATH')) {
+                signingConfig signingConfigs.orvix
+            }
+        }
     }
 
     compileOptions {
