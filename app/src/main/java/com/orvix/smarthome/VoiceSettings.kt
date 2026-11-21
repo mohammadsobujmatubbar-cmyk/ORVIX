@@ -30,6 +30,7 @@ fun VoiceSettingsCard(lang: Lang) {
             Modifier.horizontalScroll(rememberScrollState()),
             horizontalArrangement = Arrangement.spacedBy(8.dp)
         ) {
+            GlassChip(if (lang == Lang.BN) "৫ সেকেন্ড" else "5 sec", VoiceState.durIdx == 4) { VoiceState.setDur(ctx, 4) }
             GlassChip(vs.d30, VoiceState.durIdx == 0) { VoiceState.setDur(ctx, 0) }
             GlassChip(vs.d1, VoiceState.durIdx == 1) { VoiceState.setDur(ctx, 1) }
             GlassChip(vs.d5, VoiceState.durIdx == 2) { VoiceState.setDur(ctx, 2) }

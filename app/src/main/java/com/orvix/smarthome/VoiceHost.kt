@@ -216,6 +216,7 @@ private class VoiceEngine(
                 }
                 val line = heard + "  ->  " + label + " " + (if (p.on) ui.on else ui.off)
                 VoiceState.addLog(line)
+                speak(spokenConfirm(p.targets.map { it.second }, p.on, p.all, bn), bn)
                 val firstId = p.targets[0].second.id
                 handler.postDelayed({
                     val code = CmdStatus.map.value[firstId]

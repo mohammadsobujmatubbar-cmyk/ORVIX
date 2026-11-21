@@ -52,6 +52,7 @@ object VoiceState {
     fun durationMs(): Long = when (durIdx) {
         0 -> 30000L
         1 -> 60000L
+        4 -> 5000L
         2 -> 300000L
         else -> 86400000L
     }
