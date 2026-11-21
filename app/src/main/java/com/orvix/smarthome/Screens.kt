@@ -178,7 +178,7 @@ fun DevicesScreen(
                     color = g.subText, fontSize = 13.sp
                 )
                 Spacer(Modifier.height(10.dp))
-                    Text(statusText(DeviceStatus.map.collectAsState().value[d.id]), color = g.subText, fontSize = 14.sp)
+                    Text(deviceStatusLabel(d), color = g.subText, fontSize = 14.sp)
                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                     GlassChip(s.open, true) { onOpen(d) }
                     GlassChip(s.edit, false) { if (d.type == "MQTT") { onMqtt(d) } else { editing = d } }

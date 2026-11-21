@@ -14,6 +14,7 @@ class MainActivity : ComponentActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        MqttManager.init(applicationContext)
         val prefs = getSharedPreferences("orvix_settings", MODE_PRIVATE)
         BgState.load(this)
         val savedTheme = try {

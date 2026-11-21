@@ -16,6 +16,7 @@ fun statusText(v: Boolean?): String = when (v) {
 }
 
 suspend fun checkDevice(d: DeviceEntity) {
+    if (d.type.equals("MQTT", true)) return
     if (d.checkMessage.isBlank()) {
         DeviceStatus.map.update { it - d.id }
         return
